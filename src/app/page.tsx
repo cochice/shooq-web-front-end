@@ -809,7 +809,7 @@ export default function Home() {
                             <div className="flex items-center justify-between">
                                 <div>
                                     <p className="text-blue-800 dark:text-blue-200 font-medium">
-                                        검색 결과: "{searchKeyword}"
+                                        검색 결과: &quot;{searchKeyword}&quot;
                                     </p>
                                     <p className="text-blue-600 dark:text-blue-300 text-sm mt-1">
                                         총 {totalCount}개의 게시물이 검색되었습니다.
