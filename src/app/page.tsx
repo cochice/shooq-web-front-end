@@ -79,19 +79,15 @@ export default function Home() {
     const [sites, setSites] = useState<string[]>([]);
     const [selectedSites, setSelectedSites] = useState<Set<string>>(new Set());
     const [copyrightDisplay, setCopyrightDisplay] = useState<'full' | 'short' | 'hidden'>('full');
-    
+
     // 검색 상태
     const [searchKeyword, setSearchKeyword] = useState('');
     const [isSearchMode, setIsSearchMode] = useState(false);
-    
+
     // 사이드바 호버 상태
     const [isSidebarHovered, setIsSidebarHovered] = useState(false);
     const [isMobileSidebarHovered, setIsMobileSidebarHovered] = useState(false);
 
-    // Pull-to-refresh 상태
-    const [isPullToRefresh, setIsPullToRefresh] = useState(false);
-    const [pullDistance, setPullDistance] = useState(0);
-    const [touchStartY, setTouchStartY] = useState(0);
 
     // 날짜 포맷팅 함수
     const formatDate = (dateString?: string) => {
@@ -145,7 +141,7 @@ export default function Home() {
             const sitesArray = filterSites || (selectedSites.size > 0 ? Array.from(selectedSites) : undefined);
 
             const [postsResult, sitesResult] = await Promise.all([
-                isSearchMode && searchKeyword 
+                isSearchMode && searchKeyword
                     ? ApiService.searchPosts(searchKeyword, undefined, undefined, 1, 10, sitesArray)
                     : ApiService.getPosts(1, 10, undefined, sitesArray),
                 ApiService.getSites().catch(() => []) // 사이트 로드 실패해도 계속 진행
@@ -165,39 +161,6 @@ export default function Home() {
         }
     }, [selectedSites, isSearchMode, searchKeyword]);
 
-    // Pull-to-refresh 핸들러
-    const handleTouchStart = useCallback((e: React.TouchEvent) => {
-        if (window.scrollY === 0) { // 페이지 최상단에서만 동작
-            setTouchStartY(e.touches[0].clientY);
-        }
-    }, []);
-
-    const handleTouchMove = useCallback((e: React.TouchEvent) => {
-        if (window.scrollY !== 0 || touchStartY === 0) return;
-
-        const currentY = e.touches[0].clientY;
-        const distance = currentY - touchStartY;
-
-        if (distance > 0) { // 아래로 드래그
-            e.preventDefault(); // 기본 스크롤 방지
-            const maxDistance = 150; // 최대 당기기 거리
-            const normalizedDistance = Math.min(distance, maxDistance);
-            setPullDistance(normalizedDistance);
-        }
-    }, [touchStartY]);
-
-    const handleTouchEnd = useCallback(() => {
-        if (pullDistance > 60) { // 충분히 당겼을 때 새로고침
-            setIsPullToRefresh(true);
-            loadInitialData().finally(() => {
-                setIsPullToRefresh(false);
-            });
-        }
-
-        // 상태 초기화
-        setTouchStartY(0);
-        setPullDistance(0);
-    }, [pullDistance, loadInitialData]);
 
     // 더 많은 포스트 로드
     const loadMorePosts = useCallback(async () => {
@@ -208,7 +171,7 @@ export default function Home() {
         try {
             setLoading(true);
             const sitesArray = selectedSites.size > 0 ? Array.from(selectedSites) : undefined;
-            const result = isSearchMode && searchKeyword 
+            const result = isSearchMode && searchKeyword
                 ? await ApiService.searchPosts(searchKeyword, undefined, undefined, currentPage + 1, 10, sitesArray)
                 : await ApiService.getPosts(currentPage + 1, 10, undefined, sitesArray);
 
@@ -235,14 +198,14 @@ export default function Home() {
         setIsSearchMode(!!trimmedKeyword);
         setCurrentPage(1);
         setPosts([]);
-        
+
         // localStorage에 검색 키워드 저장
         if (trimmedKeyword) {
             StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, trimmedKeyword);
         } else {
             StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
         }
-        
+
         loadInitialData();
     }, [loadInitialData]);
 
@@ -252,10 +215,10 @@ export default function Home() {
         setIsSearchMode(false);
         setCurrentPage(1);
         setPosts([]);
-        
+
         // localStorage에서 검색 키워드 제거
         StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
-        
+
         loadInitialData();
     }, [loadInitialData]);
 
@@ -263,7 +226,7 @@ export default function Home() {
     const handleSidebarWheel = useCallback((e: React.WheelEvent) => {
         const target = e.currentTarget as HTMLDivElement;
         const { scrollTop, scrollHeight, clientHeight } = target;
-        
+
         // 스크롤이 가능한 경우에만 이벤트 전파 중단
         if (
             (e.deltaY > 0 && scrollTop < scrollHeight - clientHeight) || // 아래로 스크롤하면서 더 스크롤 가능
@@ -382,7 +345,7 @@ export default function Home() {
             // 필터 설정 복원
             const savedSelectedSites = StorageUtils.getStringSet(STORAGE_KEYS.SELECTED_SITES);
             setSelectedSites(savedSelectedSites);
-            
+
             // 검색 키워드 복원
             const savedSearchKeyword = StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
             if (savedSearchKeyword) {
@@ -427,36 +390,7 @@ export default function Home() {
     const filteredPosts = posts;
 
     return (
-        <div
-            className="min-h-screen bg-gray-50 dark:bg-gray-900"
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
-            {/* Pull-to-refresh visual feedback */}
-            {pullDistance > 0 && (
-                <div
-                    className="fixed top-16 left-0 right-0 z-40 flex items-center justify-center transition-all duration-200"
-                    style={{
-                        height: `${Math.min(pullDistance, 60)}px`,
-                        backgroundColor: 'rgba(249, 115, 22, 0.1)'
-                    }}
-                >
-                    <div className={`flex items-center space-x-2 ${pullDistance > 60 ? 'text-orange-500' : 'text-gray-400'}`}>
-                        <svg
-                            className={`w-5 h-5 transition-transform duration-200 ${pullDistance > 60 ? 'rotate-180' : ''}`}
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                        <span className="text-sm font-medium">
-                            {pullDistance > 60 ? '놓아서 새로고침' : '아래로 당겨서 새로고침'}
-                        </span>
-                    </div>
-                </div>
-            )}
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
 
             {/* Global styles for loading animation */}
             <style dangerouslySetInnerHTML={{
@@ -501,9 +435,9 @@ export default function Home() {
                                 className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                             >
                                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm">S</span>
+                                    <span className="text-white font-bold text-xl">S</span>
                                 </div>
-                                <span className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">Shooq</span>
+                                <span className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">shooq</span>
                             </button>
                         </div>
 
@@ -571,25 +505,25 @@ export default function Home() {
                                 )}
                             </button>
 
-                            <button type="button" className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-orange-500 border border-orange-500 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900">
+                            {/* <button type="button" className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-orange-500 border border-orange-500 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900">
                                 로그인
                             </button>
                             <button type="button" className="hidden sm:block px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-full hover:bg-orange-600">
                                 회원가입
-                            </button>
+                            </button> */}
                         </div>
                     </div>
                 </div>
             </header>
 
             {/* NProgress-style Loading Bar */}
-            {(loading || isPullToRefresh) && (
+            {loading && (
                 <div className="fixed top-16 left-0 right-0 z-[60] h-0.5 bg-gray-200 dark:bg-gray-700">
                     <div
                         className="h-full bg-orange-500 transition-all duration-300 ease-out"
                         style={{
-                            width: isPullToRefresh ? '100%' : '30%',
-                            animation: isPullToRefresh ? 'none' : 'nprogress-bar 2s ease-in-out infinite'
+                            width: '30%',
+                            animation: 'nprogress-bar 2s ease-in-out infinite'
                         }}
                     />
                     {/* NProgress Spinner */}
@@ -649,7 +583,7 @@ export default function Home() {
                                 </button>
                             )}
                         </div>
-                        <div 
+                        <div
                             className={`flex-1 overflow-y-auto ${!isMobileSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
                             onMouseEnter={() => setIsMobileSidebarHovered(true)}
                             onMouseLeave={() => setIsMobileSidebarHovered(false)}
@@ -659,43 +593,43 @@ export default function Home() {
                             } as React.CSSProperties}
                         >
                             <div className="space-y-1 pr-2">
-                            {sites.length > 0 ? (
-                                sites.map((site) => {
-                                    const siteColor = getSiteColor(site);
-                                    const isSelected = selectedSites.has(site);
-                                    return (
-                                        <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
-                                            <div className="flex items-center space-x-3">
-                                                <div
-                                                    className="w-6 h-6 rounded-full flex-shrink-0"
-                                                    style={{ backgroundColor: siteColor }}
-                                                ></div>
-                                                <span className="text-sm font-medium text-gray-300">{site}</span>
+                                {sites.length > 0 ? (
+                                    sites.map((site) => {
+                                        const siteColor = getSiteColor(site);
+                                        const isSelected = selectedSites.has(site);
+                                        return (
+                                            <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
+                                                <div className="flex items-center space-x-3">
+                                                    <div
+                                                        className="w-6 h-6 rounded-full flex-shrink-0"
+                                                        style={{ backgroundColor: siteColor }}
+                                                    ></div>
+                                                    <span className="text-sm font-medium text-gray-300">{site}</span>
+                                                </div>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleSiteFilter(site)}
+                                                    className={`p-1 rounded transition-colors ${isSelected
+                                                        ? 'text-orange-400 bg-orange-900/30 hover:bg-orange-900/50'
+                                                        : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
+                                                        }`}
+                                                    title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                    </svg>
+                                                </button>
                                             </div>
-                                            <button
-                                                type="button"
-                                                onClick={() => toggleSiteFilter(site)}
-                                                className={`p-1 rounded transition-colors ${isSelected
-                                                    ? 'text-orange-400 bg-orange-900/30 hover:bg-orange-900/50'
-                                                    : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
-                                                    }`}
-                                                title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
-                                            >
-                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                                </svg>
-                                            </button>
+                                        );
+                                    })
+                                ) : (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto mb-2"></div>
+                                            <p className="text-sm text-gray-400">사이트 정보를 불러오는 중...</p>
                                         </div>
-                                    );
-                                })
-                            ) : (
-                                <div className="flex items-center justify-center py-8">
-                                    <div className="text-center">
-                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto mb-2"></div>
-                                        <p className="text-sm text-gray-400">사이트 정보를 불러오는 중...</p>
                                     </div>
-                                </div>
-                            )}
+                                )}
                             </div>
                         </div>
                     </div>
@@ -735,7 +669,7 @@ export default function Home() {
                                     </button>
                                 )}
                             </div>
-                            <div 
+                            <div
                                 className={`flex-1 overflow-y-auto min-h-0 ${!isSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
                                 onWheel={handleSidebarWheel}
                                 onMouseEnter={() => setIsSidebarHovered(true)}
@@ -748,41 +682,41 @@ export default function Home() {
                                 <div className="space-y-2 pr-2">
                                     {sites.length > 0 ? (
                                         sites.map((site) => {
-                                        const siteColor = getSiteColor(site);
-                                        const isSelected = selectedSites.has(site);
-                                        return (
-                                            <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                                <div className="flex items-center space-x-3">
-                                                    <div
-                                                        className="w-6 h-6 rounded-full flex-shrink-0"
-                                                        style={{ backgroundColor: siteColor }}
-                                                    ></div>
-                                                    <span className="text-sm font-medium text-gray-900 dark:text-white">{site}</span>
+                                            const siteColor = getSiteColor(site);
+                                            const isSelected = selectedSites.has(site);
+                                            return (
+                                                <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                                    <div className="flex items-center space-x-3">
+                                                        <div
+                                                            className="w-6 h-6 rounded-full flex-shrink-0"
+                                                            style={{ backgroundColor: siteColor }}
+                                                        ></div>
+                                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{site}</span>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleSiteFilter(site)}
+                                                        className={`p-1 rounded transition-colors ${isSelected
+                                                            ? 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50'
+                                                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                            }`}
+                                                        title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                        </svg>
+                                                    </button>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSiteFilter(site)}
-                                                    className={`p-1 rounded transition-colors ${isSelected
-                                                        ? 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50'
-                                                        : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                                                        }`}
-                                                    title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                                    </svg>
-                                                </button>
+                                            );
+                                        })
+                                    ) : (
+                                        <div className="flex items-center justify-center py-8">
+                                            <div className="text-center">
+                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                                                <p className="text-sm text-gray-500 dark:text-gray-400">사이트 정보를 불러오는 중...</p>
                                             </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="flex items-center justify-center py-8">
-                                        <div className="text-center">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"></div>
-                                            <p className="text-sm text-gray-500 dark:text-gray-400">사이트 정보를 불러오는 중...</p>
                                         </div>
-                                    </div>
-                                )}
+                                    )}
                                 </div>
                             </div>
                         </div>
