@@ -8,7 +8,8 @@ const STORAGE_KEYS = {
     THEME: 'shooq-theme',
     NEW_WINDOW_MODE: 'shooq-newWindowMode',
     SELECTED_SITES: 'shooq-selectedSites',
-    SEARCH_KEYWORD: 'shooq-searchKeyword'
+    SEARCH_KEYWORD: 'shooq-searchKeyword',
+    IS_POPULAR_MODE: 'shooq-isPopularMode'
 } as const;
 
 // localStorage 유틸리티 함수
@@ -83,6 +84,9 @@ export default function Home() {
     // 검색 상태
     const [searchKeyword, setSearchKeyword] = useState('');
     const [isSearchMode, setIsSearchMode] = useState(false);
+
+    // 인기글/최신글 토글 상태 (기본값: false = 최신글)
+    const [isPopularMode, setIsPopularMode] = useState(false);
 
     // 사이드바 호버 상태
     const [isSidebarHovered, setIsSidebarHovered] = useState(false);
@@ -176,10 +180,16 @@ export default function Home() {
 
             const sitesArray = filterSites || (selectedSites.size > 0 ? Array.from(selectedSites) : undefined);
 
+            const sortByValue = isPopularMode ? 'popular' : 'latest';
             const [postsResult, sitesResult] = await Promise.all([
-                isSearchMode && searchKeyword
-                    ? ApiService.searchPosts(searchKeyword, undefined, undefined, 1, 10, sitesArray)
-                    : ApiService.getPosts(1, 10, undefined, sitesArray),
+                ApiService.getPosts(
+                    1, 
+                    10, 
+                    undefined, 
+                    sitesArray, 
+                    sortByValue,
+                    isSearchMode ? searchKeyword : undefined
+                ),
                 ApiService.getSites().catch(() => []) // 사이트 로드 실패해도 계속 진행
             ]);
 
@@ -195,7 +205,7 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    }, [selectedSites, isSearchMode, searchKeyword]);
+    }, [selectedSites, isSearchMode, searchKeyword, isPopularMode]);
 
 
     // 더 많은 포스트 로드
@@ -207,9 +217,15 @@ export default function Home() {
         try {
             setLoading(true);
             const sitesArray = selectedSites.size > 0 ? Array.from(selectedSites) : undefined;
-            const result = isSearchMode && searchKeyword
-                ? await ApiService.searchPosts(searchKeyword, undefined, undefined, currentPage + 1, 10, sitesArray)
-                : await ApiService.getPosts(currentPage + 1, 10, undefined, sitesArray);
+            const sortByValue = isPopularMode ? 'popular' : 'latest';
+            const result = await ApiService.getPosts(
+                currentPage + 1, 
+                10, 
+                undefined, 
+                sitesArray, 
+                sortByValue,
+                isSearchMode ? searchKeyword : undefined
+            );
 
             setPosts(prev => [...prev, ...result.data]);
             setCurrentPage(result.page);
@@ -220,7 +236,7 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, searchKeyword]);
+    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, searchKeyword, isPopularMode]);
 
     // 홈 버튼 클릭 시 새글 불러오기 (검색 상태 유지)
     const handleHomeClick = () => {
@@ -277,6 +293,13 @@ export default function Home() {
         loadInitialData();
     }, [loadInitialData]);
 
+    // 인기글/최신글 토글 변경 시 데이터 리로드
+    useEffect(() => {
+        setPosts([]);
+        setCurrentPage(1);
+        loadInitialData();
+    }, [isPopularMode, loadInitialData]);
+
     // 스크롤 이벤트 핸들러
     useEffect(() => {
         const handleScroll = () => {
@@ -325,6 +348,13 @@ export default function Home() {
         const newWindowMode = !isNewWindowMode;
         setIsNewWindowMode(newWindowMode);
         StorageUtils.setBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, newWindowMode);
+    };
+
+    // 인기글/최신글 모드 토글
+    const togglePopularMode = () => {
+        const newPopularMode = !isPopularMode;
+        setIsPopularMode(newPopularMode);
+        StorageUtils.setBoolean(STORAGE_KEYS.IS_POPULAR_MODE, newPopularMode);
     };
 
     // 사이트 필터 토글
@@ -389,11 +419,16 @@ export default function Home() {
                 setIsSearchMode(true);
             }
 
+            // 정렬 상태 복원
+            const savedIsPopularMode = StorageUtils.getBoolean(STORAGE_KEYS.IS_POPULAR_MODE, false);
+            setIsPopularMode(savedIsPopularMode);
+
             console.log('Settings loaded:', {
                 theme: savedTheme || (prefersDark ? 'dark (system)' : 'light (system)'),
                 newWindowMode: savedNewWindowMode,
                 searchKeyword: savedSearchKeyword,
-                selectedSites: Array.from(savedSelectedSites)
+                selectedSites: Array.from(savedSelectedSites),
+                isPopularMode: savedIsPopularMode
             });
         }
     }, []);
@@ -445,37 +480,36 @@ export default function Home() {
             {/* Header */}
             <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50">
                 <div className="max-w-6xl mx-auto px-4 py-3">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                            {/* Mobile Hamburger Menu */}
-                            <button
-                                type="button"
-                                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-                                className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
-                                aria-label={isSidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
-                            >
-                                {isSidebarOpen ? (
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                ) : (
-                                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                                    </svg>
-                                )}
-                            </button>
+                    <div className="relative flex items-center justify-start space-x-4">
+                        {/* Mobile Hamburger Menu */}
+                        <button
+                            type="button"
+                            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                            className="lg:hidden p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white"
+                            aria-label={isSidebarOpen ? "메뉴 닫기" : "메뉴 열기"}
+                        >
+                            {isSidebarOpen ? (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            ) : (
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                                </svg>
+                            )}
+                        </button>
 
-                            <button
-                                type="button"
-                                onClick={handleHomeClick}
-                                className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-                            >
-                                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-xl">S</span>
-                                </div>
-                                <span className="text-xl font-bold text-gray-900 dark:text-white hidden sm:block">shooq</span>
-                            </button>
-                        </div>
+                        {/* Logo and Title */}
+                        <button
+                            type="button"
+                            onClick={handleHomeClick}
+                            className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                        >
+                            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                                <span className="text-white font-bold text-xl">S</span>
+                            </div>
+                            <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">shooq</span>
+                        </button>
 
                         <div className="flex-1 max-w-lg mx-2 sm:mx-8">
                             <div className="relative">
@@ -506,7 +540,7 @@ export default function Home() {
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2 sm:space-x-4">
+                        <div className="absolute right-4 flex items-center space-x-2 sm:space-x-4">
                             {/* New Window Mode Toggle */}
                             <button
                                 type="button"
@@ -577,12 +611,32 @@ export default function Home() {
                                 setIsSidebarOpen(false);
                             }}
                             disabled={loading}
-                            className="w-full flex items-center justify-start space-x-3 text-gray-300 hover:text-white hover:bg-gray-800 font-medium py-3 px-3 mb-4 rounded-lg transition-colors"
+                            className="w-full flex items-center justify-start space-x-3 text-gray-300 hover:text-white hover:bg-gray-800 font-medium py-3 px-3 mb-2 rounded-lg transition-colors"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
                             <span>홈</span>
+                        </button>
+
+                        {/* 인기글/최신글 토글 */}
+                        <button
+                            type="button"
+                            onClick={togglePopularMode}
+                            className="w-full flex items-center justify-start space-x-3 text-gray-300 hover:text-white hover:bg-gray-800 font-medium py-3 px-3 mb-4 rounded-lg transition-colors"
+                        >
+                            {isPopularMode ? (
+                                // 시계 아이콘 (최신글)
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            ) : (
+                                // 트렌딩 아이콘 (인기글)
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                </svg>
+                            )}
+                            <span>{isPopularMode ? '최신글' : '인기글'}</span>
                         </button>
 
                         {/* 경계선 */}
@@ -752,12 +806,32 @@ export default function Home() {
                                 type="button"
                                 onClick={handleHomeClick}
                                 disabled={loading}
-                                className="w-full flex items-center justify-start space-x-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold py-3 px-2 mb-4 transition-colors"
+                                className="w-full flex items-center justify-start space-x-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold py-3 px-2 mb-2 transition-colors"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                 </svg>
                                 <span>홈</span>
+                            </button>
+
+                            {/* 인기글/최신글 토글 */}
+                            <button
+                                type="button"
+                                onClick={togglePopularMode}
+                                className="w-full flex items-center justify-start space-x-3 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold py-3 px-2 mb-4 transition-colors"
+                            >
+                                {isPopularMode ? (
+                                    // 시계 아이콘 (최신글)
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                ) : (
+                                    // 트렌딩 아이콘 (인기글)
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                    </svg>
+                                )}
+                                <span>{isPopularMode ? '최신글' : '인기글'}</span>
                             </button>
 
                             {/* 경계선 */}

@@ -41,10 +41,19 @@ export class ApiService {
     return response.json();
   }
 
-  static async getPosts(page: number = 1, pageSize: number = 10, site?: string, sites?: string[]): Promise<PagedResult<SiteBbsInfo>> {
+  static async getPosts(
+    page: number = 1, 
+    pageSize: number = 10, 
+    site?: string, 
+    sites?: string[], 
+    sortBy: string = 'latest',
+    keyword?: string,
+    author?: string
+  ): Promise<PagedResult<SiteBbsInfo>> {
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
+      sortBy: sortBy,
     });
     
     if (site) {
@@ -53,6 +62,9 @@ export class ApiService {
       // 다중 사이트 필터링
       sites.forEach(s => params.append('sites', s));
     }
+
+    if (keyword) params.append('keyword', keyword);
+    if (author) params.append('author', author);
 
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts?${params.toString()}`);
   }
@@ -65,30 +77,6 @@ export class ApiService {
     return this.fetchApi<string[]>('/sites');
   }
 
-  static async searchPosts(
-    keyword?: string,
-    site?: string,
-    author?: string,
-    page: number = 1,
-    pageSize: number = 10,
-    sites?: string[]
-  ): Promise<PagedResult<SiteBbsInfo>> {
-    const params = new URLSearchParams({
-      page: page.toString(),
-      pageSize: pageSize.toString(),
-    });
-
-    if (keyword) params.append('keyword', keyword);
-    if (site) {
-      params.append('site', site);
-    } else if (sites && sites.length > 0) {
-      // 다중 사이트 필터링
-      sites.forEach(s => params.append('sites', s));
-    }
-    if (author) params.append('author', author);
-
-    return this.fetchApi<PagedResult<SiteBbsInfo>>(`/search?${params.toString()}`);
-  }
 
   static async getPopularPosts(count: number = 10): Promise<SiteBbsInfo[]> {
     return this.fetchApi<SiteBbsInfo[]>(`/popular?count=${count}`);
