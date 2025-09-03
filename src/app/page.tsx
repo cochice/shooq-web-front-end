@@ -124,12 +124,48 @@ export default function Home() {
             'Clien': 'rgb(25, 36, 125)',      // Navy
             'TodayHumor': 'rgb(255, 255, 255)', // White
             'SLRClub': 'rgb(66, 116, 175)',   // Blue
+            'SlrClub': 'rgb(66, 116, 175)',   // Blue
+            'Ruliweb': 'rgb(255, 102, 0)',    // Orange
             '82Cook': 'rgb(230, 230, 230)',
             'MlbPark': 'rgb(65, 106, 220)',
             'BobaeDream': 'rgb(16, 90, 174)',
             'Inven': 'rgb(240, 255, 255)',
         } as const;
         return siteColors[site as keyof typeof siteColors] || 'rgb(107, 114, 128)'; // Default gray
+    };
+
+    // 사이트별 로고 문자 및 색상 가져오기
+    const getSiteLogo = (site?: string) => {
+        const logoData = {
+            'FMKorea': { letter: 'F', bgColor: 'rgb(62, 97, 197)', textColor: 'white' },
+            'Humoruniv': { letter: 'H', bgColor: 'rgb(219, 23, 55)', textColor: 'white' },
+            'TheQoo': { letter: 'T', bgColor: 'rgb(42, 65, 95)', textColor: 'white' },
+            'NaverNews': { letter: 'N', bgColor: 'rgb(40, 181, 78)', textColor: 'white' },
+            'Ppomppu': { letter: 'P', bgColor: 'rgb(199, 199, 199)', textColor: 'rgb(75, 85, 99)' },
+            'GoogleNews': { letter: 'G', bgColor: 'rgb(53, 112, 255)', textColor: 'white' },
+            'Clien': { letter: 'C', bgColor: 'rgb(25, 36, 125)', textColor: 'white' },
+            'TodayHumor': { letter: 'T', bgColor: 'rgb(255, 255, 255)', textColor: 'rgb(75, 85, 99)' },
+            'SLRClub': { letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
+            'SlrClub': { letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
+            'Ruliweb': { letter: 'R', bgColor: 'rgb(255, 102, 0)', textColor: 'white' },
+            '82Cook': { letter: '8', bgColor: 'rgb(230, 230, 230)', textColor: 'rgb(75, 85, 99)' },
+            'MlbPark': { letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
+            'BobaeDream': { letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
+            'Inven': { letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
+        } as const;
+        
+        return logoData[site as keyof typeof logoData] || { letter: '?', bgColor: 'rgb(107, 114, 128)', textColor: 'white' };
+    };
+
+    // 사이트 분류 함수
+    const categorizeSites = (sitesList: string[]) => {
+        const newsSites = ['NaverNews', 'GoogleNews'];
+        const communitySites = sitesList.filter(site => !newsSites.includes(site));
+        
+        return {
+            news: sitesList.filter(site => newsSites.includes(site)),
+            community: communitySites
+        };
     };
 
     // 초기 데이터 로드
@@ -516,25 +552,6 @@ export default function Home() {
                 </div>
             </header>
 
-            {/* NProgress-style Loading Bar */}
-            {loading && (
-                <div className="fixed top-16 left-0 right-0 z-[60] h-0.5 bg-gray-200 dark:bg-gray-700">
-                    <div
-                        className="h-full bg-orange-500 transition-all duration-300 ease-out"
-                        style={{
-                            width: '30%',
-                            animation: 'nprogress-bar 2s ease-in-out infinite'
-                        }}
-                    />
-                    {/* NProgress Spinner */}
-                    <div className="absolute right-2 top-1">
-                        <div
-                            className="w-3 h-3 border-2 border-orange-500 border-t-transparent rounded-full"
-                            style={{ animation: 'nprogress-spinner 1s linear infinite' }}
-                        />
-                    </div>
-                </div>
-            )}
 
             {/* Mobile Sidebar Overlay */}
             <div className={`lg:hidden fixed inset-0 top-16 z-40 transition-all duration-300 ${isSidebarOpen ? 'visible' : 'invisible'}`}>
@@ -571,18 +588,6 @@ export default function Home() {
                         {/* 경계선 */}
                         <div className="border-b border-gray-700 mb-4"></div>
 
-                        <div className="flex items-center justify-between mb-3">
-                            <h3 className="font-medium text-gray-400 text-sm uppercase tracking-wide">이슈 채널 ({sites.length}개)</h3>
-                            {selectedSites.size > 0 && (
-                                <button
-                                    type="button"
-                                    onClick={clearAllFilters}
-                                    className="text-xs text-orange-400 hover:text-orange-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
-                                >
-                                    전체 해제
-                                </button>
-                            )}
-                        </div>
                         <div
                             className={`flex-1 overflow-y-auto ${!isMobileSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
                             onMouseEnter={() => setIsMobileSidebarHovered(true)}
@@ -592,45 +597,146 @@ export default function Home() {
                                 scrollbarColor: isMobileSidebarHovered ? 'rgb(107, 114, 128) transparent' : 'transparent transparent',
                             } as React.CSSProperties}
                         >
-                            <div className="space-y-1 pr-2">
-                                {sites.length > 0 ? (
-                                    sites.map((site) => {
-                                        const siteColor = getSiteColor(site);
-                                        const isSelected = selectedSites.has(site);
-                                        return (
-                                            <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
-                                                <div className="flex items-center space-x-3">
-                                                    <div
-                                                        className="w-6 h-6 rounded-full flex-shrink-0"
-                                                        style={{ backgroundColor: siteColor }}
-                                                    ></div>
-                                                    <span className="text-sm font-medium text-gray-300">{site}</span>
+                            {sites.length > 0 ? (
+                                (() => {
+                                    const { news, community } = categorizeSites(sites);
+                                    return (
+                                        <div className="space-y-6 pr-2">
+                                            {/* 뉴스 섹션 */}
+                                            {news.length > 0 && (
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h3 className="font-medium text-gray-400 text-sm uppercase tracking-wide">뉴스 ({news.length}개)</h3>
+                                                        {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newSet = new Set(selectedSites);
+                                                                    news.forEach(site => newSet.delete(site));
+                                                                    setSelectedSites(newSet);
+                                                                }}
+                                                                className="text-xs text-orange-400 hover:text-orange-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                                                            >
+                                                                뉴스 해제
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {news.map((site) => {
+                                                            const isSelected = selectedSites.has(site);
+                                                            return (
+                                                                <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div
+                                                                            className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                                                                            style={{
+                                                                                backgroundColor: getSiteLogo(site).bgColor,
+                                                                                color: getSiteLogo(site).textColor
+                                                                            }}
+                                                                        >
+                                                                            {getSiteLogo(site).letter}
+                                                                        </div>
+                                                                        <span className="text-sm font-medium text-gray-300">{site}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleSiteFilter(site)}
+                                                                        className={`p-1 rounded transition-colors ${isSelected
+                                                                            ? 'text-orange-400 bg-orange-900/30 hover:bg-orange-900/50'
+                                                                            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
+                                                                            }`}
+                                                                        title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
                                                 </div>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => toggleSiteFilter(site)}
-                                                    className={`p-1 rounded transition-colors ${isSelected
-                                                        ? 'text-orange-400 bg-orange-900/30 hover:bg-orange-900/50'
-                                                        : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
-                                                        }`}
-                                                    title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
-                                                >
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                                    </svg>
-                                                </button>
-                                            </div>
-                                        );
-                                    })
-                                ) : (
-                                    <div className="flex items-center justify-center py-8">
-                                        <div className="text-center">
-                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto mb-2"></div>
-                                            <p className="text-sm text-gray-400">사이트 정보를 불러오는 중...</p>
+                                            )}
+
+                                            {/* 커뮤니티 섹션 */}
+                                            {community.length > 0 && (
+                                                <div>
+                                                    <div className="flex items-center justify-between mb-3">
+                                                        <h3 className="font-medium text-gray-400 text-sm uppercase tracking-wide">커뮤니티 ({community.length}개)</h3>
+                                                        {selectedSites.size > 0 && community.some(site => selectedSites.has(site)) && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    const newSet = new Set(selectedSites);
+                                                                    community.forEach(site => newSet.delete(site));
+                                                                    setSelectedSites(newSet);
+                                                                }}
+                                                                className="text-xs text-orange-400 hover:text-orange-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                                                            >
+                                                                커뮤니티 해제
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {community.map((site) => {
+                                                            const isSelected = selectedSites.has(site);
+                                                            return (
+                                                                <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
+                                                                    <div className="flex items-center space-x-3">
+                                                                        <div
+                                                                            className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                                                                            style={{
+                                                                                backgroundColor: getSiteLogo(site).bgColor,
+                                                                                color: getSiteLogo(site).textColor
+                                                                            }}
+                                                                        >
+                                                                            {getSiteLogo(site).letter}
+                                                                        </div>
+                                                                        <span className="text-sm font-medium text-gray-300">{site}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => toggleSiteFilter(site)}
+                                                                        className={`p-1 rounded transition-colors ${isSelected
+                                                                            ? 'text-orange-400 bg-orange-900/30 hover:bg-orange-900/50'
+                                                                            : 'text-gray-500 hover:text-gray-300 hover:bg-gray-700'
+                                                                            }`}
+                                                                        title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                                    >
+                                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+
+                                            {/* 전체 해제 버튼 */}
+                                            {selectedSites.size > 0 && (
+                                                <div className="pt-2 border-t border-gray-700">
+                                                    <button
+                                                        type="button"
+                                                        onClick={clearAllFilters}
+                                                        className="w-full text-xs text-orange-400 hover:text-orange-300 px-3 py-2 rounded hover:bg-gray-800 transition-colors"
+                                                    >
+                                                        전체 해제
+                                                    </button>
+                                                </div>
+                                            )}
                                         </div>
+                                    );
+                                })()
+                            ) : (
+                                <div className="flex items-center justify-center py-8">
+                                    <div className="text-center">
+                                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-600 mx-auto mb-2"></div>
+                                        <p className="text-sm text-gray-400">사이트 정보를 불러오는 중...</p>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -656,19 +762,6 @@ export default function Home() {
 
                             {/* 경계선 */}
                             <div className="border-b border-gray-100 dark:border-gray-700 mb-4"></div>
-
-                            <div className="flex items-center justify-between mb-3">
-                                <h3 className="font-semibold text-gray-900 dark:text-white">이슈 채널 ({sites.length}개)</h3>
-                                {selectedSites.size > 0 && (
-                                    <button
-                                        type="button"
-                                        onClick={clearAllFilters}
-                                        className="text-xs text-orange-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
-                                    >
-                                        전체 해제
-                                    </button>
-                                )}
-                            </div>
                             <div
                                 className={`flex-1 overflow-y-auto min-h-0 ${!isSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
                                 onWheel={handleSidebarWheel}
@@ -679,45 +772,146 @@ export default function Home() {
                                     scrollbarColor: isSidebarHovered ? 'rgb(156, 163, 175) transparent' : 'transparent transparent',
                                 } as React.CSSProperties}
                             >
-                                <div className="space-y-2 pr-2">
-                                    {sites.length > 0 ? (
-                                        sites.map((site) => {
-                                            const siteColor = getSiteColor(site);
-                                            const isSelected = selectedSites.has(site);
-                                            return (
-                                                <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div
-                                                            className="w-6 h-6 rounded-full flex-shrink-0"
-                                                            style={{ backgroundColor: siteColor }}
-                                                        ></div>
-                                                        <span className="text-sm font-medium text-gray-900 dark:text-white">{site}</span>
+                                {sites.length > 0 ? (
+                                    (() => {
+                                        const { news, community } = categorizeSites(sites);
+                                        return (
+                                            <div className="space-y-6 pr-2">
+                                                {/* 뉴스 섹션 */}
+                                                {news.length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h3 className="font-semibold text-gray-900 dark:text-white">뉴스 ({news.length}개)</h3>
+                                                            {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newSet = new Set(selectedSites);
+                                                                        news.forEach(site => newSet.delete(site));
+                                                                        setSelectedSites(newSet);
+                                                                    }}
+                                                                    className="text-xs text-orange-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
+                                                                >
+                                                                    뉴스 해제
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {news.map((site) => {
+                                                                const isSelected = selectedSites.has(site);
+                                                                return (
+                                                                    <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                                                        <div className="flex items-center space-x-3">
+                                                                            <div
+                                                                                className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                                                                                style={{
+                                                                                    backgroundColor: getSiteLogo(site).bgColor,
+                                                                                    color: getSiteLogo(site).textColor
+                                                                                }}
+                                                                            >
+                                                                                {getSiteLogo(site).letter}
+                                                                            </div>
+                                                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{site}</span>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => toggleSiteFilter(site)}
+                                                                            className={`p-1 rounded transition-colors ${isSelected
+                                                                                ? 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50'
+                                                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                                                }`}
+                                                                            title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => toggleSiteFilter(site)}
-                                                        className={`p-1 rounded transition-colors ${isSelected
-                                                            ? 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50'
-                                                            : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
-                                                            }`}
-                                                        title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-                                                        </svg>
-                                                    </button>
-                                                </div>
-                                            );
-                                        })
-                                    ) : (
-                                        <div className="flex items-center justify-center py-8">
-                                            <div className="text-center">
-                                                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"></div>
-                                                <p className="text-sm text-gray-500 dark:text-gray-400">사이트 정보를 불러오는 중...</p>
+                                                )}
+
+                                                {/* 커뮤니티 섹션 */}
+                                                {community.length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-3">
+                                                            <h3 className="font-semibold text-gray-900 dark:text-white">커뮤니티 ({community.length}개)</h3>
+                                                            {selectedSites.size > 0 && community.some(site => selectedSites.has(site)) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newSet = new Set(selectedSites);
+                                                                        community.forEach(site => newSet.delete(site));
+                                                                        setSelectedSites(newSet);
+                                                                    }}
+                                                                    className="text-xs text-orange-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
+                                                                >
+                                                                    커뮤니티 해제
+                                                                </button>
+                                                            )}
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            {community.map((site) => {
+                                                                const isSelected = selectedSites.has(site);
+                                                                return (
+                                                                    <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
+                                                                        <div className="flex items-center space-x-3">
+                                                                            <div
+                                                                                className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
+                                                                                style={{
+                                                                                    backgroundColor: getSiteLogo(site).bgColor,
+                                                                                    color: getSiteLogo(site).textColor
+                                                                                }}
+                                                                            >
+                                                                                {getSiteLogo(site).letter}
+                                                                            </div>
+                                                                            <span className="text-sm font-medium text-gray-900 dark:text-white">{site}</span>
+                                                                        </div>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => toggleSiteFilter(site)}
+                                                                            className={`p-1 rounded transition-colors ${isSelected
+                                                                                ? 'text-orange-500 bg-orange-100 dark:bg-orange-900/30 hover:bg-orange-200 dark:hover:bg-orange-900/50'
+                                                                                : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600'
+                                                                                }`}
+                                                                            title={isSelected ? `${site} 필터 해제` : `${site}만 보기`}
+                                                                        >
+                                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+
+                                                {/* 전체 해제 버튼 */}
+                                                {selectedSites.size > 0 && (
+                                                    <div className="pt-2 border-t border-gray-100 dark:border-gray-700">
+                                                        <button
+                                                            type="button"
+                                                            onClick={clearAllFilters}
+                                                            className="w-full text-xs text-orange-500 hover:text-orange-600 px-3 py-2 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
+                                                        >
+                                                            전체 해제
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
+                                        );
+                                    })()
+                                ) : (
+                                    <div className="flex items-center justify-center py-8">
+                                        <div className="text-center">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-gray-400 mx-auto mb-2"></div>
+                                            <p className="text-sm text-gray-500 dark:text-gray-400">사이트 정보를 불러오는 중...</p>
                                         </div>
-                                    )}
-                                </div>
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -771,46 +965,22 @@ export default function Home() {
                     <div className="space-y-4">
                         {filteredPosts.map((post, index) => (
                             <article key={`post-${post.no}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
-                                <div className="flex flex-col sm:flex-row">
-                                    {/* Site Badge */}
-                                    <div
-                                        className="flex items-center justify-center p-3 sm:w-16 w-full rounded-l-lg sm:rounded-none"
-                                        style={{ backgroundColor: getSiteColor(post.site) }}
-                                    >
-                                        <span
-                                            className={`text-xs font-bold text-center leading-tight 
-                                                ${post.site === 'TheQoo' ? 'text-white' :
-                                                    post.site === 'TodayHumor' ? 'text-gray-700' :
-                                                        post.site === '82Cook' ? 'text-green-700' :
-                                                            post.site === 'Inven' ? 'text-[#FF4433]' :
-                                                                'text-white'
-                                                }`
-                                            }
-                                        >
-                                            {
-                                                post.site === 'FMKorea' ? 'FM' :
-                                                    post.site === 'Humoruniv' ? 'HU' :
-                                                        post.site === 'TheQoo' ? 'TQ' :
-                                                            post.site === 'NaverNews' ? 'N 뉴스' :
-                                                                post.site === 'Ppomppu' ? '뽐뿌' :
-                                                                    post.site === 'GoogleNews' ? 'G 뉴스' :
-                                                                        post.site === 'Clien' ? 'CLIen' :
-                                                                            post.site === 'TodayHumor' ? '오유' :
-                                                                                post.site === 'SlrClub' ? 'SLR' :
-                                                                                    post.site === 'MlbPark' ? '엠팍' :
-                                                                                        post.site === 'BobaeDream' ? '보배' :
-                                                                                            post.site === 'Inven' ? '인벤' :
-                                                                                                (post.site || 'N/A')
-                                            }
-                                        </span>
-                                    </div>
-
-                                    {/* Content */}
-                                    <div className="flex-1 p-4">
+                                <div className="p-4">
                                         <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                                             {post.site && (
                                                 <>
-                                                    <span className="font-semibold">{post.site}</span>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div
+                                                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                            style={{
+                                                                backgroundColor: getSiteLogo(post.site).bgColor,
+                                                                color: getSiteLogo(post.site).textColor
+                                                            }}
+                                                        >
+                                                            {getSiteLogo(post.site).letter}
+                                                        </div>
+                                                        <span className="font-semibold">{post.site}</span>
+                                                    </div>
                                                     <span className="mx-1">•</span>
                                                 </>
                                             )}
@@ -821,12 +991,6 @@ export default function Home() {
                                                 </>
                                             )}
                                             <span>{formatDate(post.regDate)}</span>
-                                            {post.views && (
-                                                <>
-                                                    <span className="mx-1">•</span>
-                                                    <span>조회 {post.views}</span>
-                                                </>
-                                            )}
                                         </div>
 
                                         {post.url ? (
@@ -870,12 +1034,21 @@ export default function Home() {
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                                     </svg>
-                                                    <span className="hidden sm:inline">{post.replyNum} Comments</span>
+                                                    <span className="hidden sm:inline">{post.replyNum} 답글</span>
                                                     <span className="sm:hidden">{post.replyNum}</span>
                                                 </div>
                                             )}
+                                            {post.views && (
+                                                <div className="flex items-center space-x-1 px-2 py-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <span className="hidden sm:inline">{post.views} 조회</span>
+                                                    <span className="sm:hidden">{post.views}</span>
+                                                </div>
+                                            )}
                                         </div>
-                                    </div>
                                 </div>
                             </article>
                         ))}
