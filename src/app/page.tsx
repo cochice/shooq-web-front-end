@@ -157,7 +157,7 @@ export default function Home() {
             'BobaeDream': { letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
             'Inven': { letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
         } as const;
-        
+
         return logoData[site as keyof typeof logoData] || { letter: '?', bgColor: 'rgb(107, 114, 128)', textColor: 'white' };
     };
 
@@ -165,7 +165,7 @@ export default function Home() {
     const categorizeSites = (sitesList: string[]) => {
         const newsSites = ['NaverNews', 'GoogleNews'];
         const communitySites = sitesList.filter(site => !newsSites.includes(site));
-        
+
         return {
             news: sitesList.filter(site => newsSites.includes(site)),
             community: communitySites
@@ -183,10 +183,10 @@ export default function Home() {
             const sortByValue = isPopularMode ? 'popular' : 'latest';
             const [postsResult, sitesResult] = await Promise.all([
                 ApiService.getPosts(
-                    1, 
-                    10, 
-                    undefined, 
-                    sitesArray, 
+                    1,
+                    10,
+                    undefined,
+                    sitesArray,
                     sortByValue,
                     isSearchMode ? searchKeyword : undefined
                 ),
@@ -219,10 +219,10 @@ export default function Home() {
             const sitesArray = selectedSites.size > 0 ? Array.from(selectedSites) : undefined;
             const sortByValue = isPopularMode ? 'popular' : 'latest';
             const result = await ApiService.getPosts(
-                currentPage + 1, 
-                10, 
-                undefined, 
-                sitesArray, 
+                currentPage + 1,
+                10,
+                undefined,
+                sitesArray,
                 sortByValue,
                 isSearchMode ? searchKeyword : undefined
             );
@@ -1030,8 +1030,9 @@ export default function Home() {
                     {/* Loading Initial Data */}
                     {loading && posts.length === 0 && (
                         <div className="flex justify-center items-center py-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                            <span className="ml-3 text-gray-600 dark:text-gray-400">데이터를 불러오는 중...</span>
+                            {/* <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                            <span className="ml-3 text-gray-600 dark:text-gray-400">데이터를 불러오는 중...</span> */}
+                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
                         </div>
                     )}
 
@@ -1040,89 +1041,89 @@ export default function Home() {
                         {filteredPosts.map((post, index) => (
                             <article key={`post-${post.no}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
                                 <div className="p-4">
-                                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                            {post.site && (
-                                                <>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div
-                                                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                                                            style={{
-                                                                backgroundColor: getSiteLogo(post.site).bgColor,
-                                                                color: getSiteLogo(post.site).textColor
-                                                            }}
-                                                        >
-                                                            {getSiteLogo(post.site).letter}
-                                                        </div>
-                                                        <span className="font-semibold">{post.site}</span>
+                                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        {post.site && (
+                                            <>
+                                                <div className="flex items-center space-x-2">
+                                                    <div
+                                                        className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                        style={{
+                                                            backgroundColor: getSiteLogo(post.site).bgColor,
+                                                            color: getSiteLogo(post.site).textColor
+                                                        }}
+                                                    >
+                                                        {getSiteLogo(post.site).letter}
                                                     </div>
-                                                    <span className="mx-1">•</span>
-                                                </>
-                                            )}
-                                            {post.author && (
-                                                <>
-                                                    <span>Posted by {post.author}</span>
-                                                    <span className="mx-1">•</span>
-                                                </>
-                                            )}
-                                            <span>{formatDate(post.regDate)}</span>
-                                        </div>
-
-                                        {post.url ? (
-                                            <a
-                                                href={post.url}
-                                                target={isNewWindowMode ? "_blank" : "_self"}
-                                                rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                                                className="text-lg font-semibold text-gray-900 dark:text-white mb-2 hover:text-orange-500 cursor-pointer block"
-                                            >
-                                                {post.title || '제목 없음'}
-                                                {isNewWindowMode && (
-                                                    <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                    </svg>
-                                                )}
-                                            </a>
-                                        ) : (
-                                            <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                                {post.title || '제목 없음'}
-                                            </h2>
+                                                    <span className="font-semibold">{post.site}</span>
+                                                </div>
+                                                <span className="mx-1">•</span>
+                                            </>
                                         )}
-
-                                        {post.content && (
-                                            <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
-                                                {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
-                                            </p>
+                                        {post.author && (
+                                            <>
+                                                <span>Posted by {post.author}</span>
+                                                <span className="mx-1">•</span>
+                                            </>
                                         )}
+                                        <span>{formatDate(post.regDate)}</span>
+                                    </div>
 
-                                        <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                                            {post.likes && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.likes} 추천</span>
-                                                    <span className="sm:hidden">{post.likes}</span>
-                                                </div>
+                                    {post.url ? (
+                                        <a
+                                            href={post.url}
+                                            target={isNewWindowMode ? "_blank" : "_self"}
+                                            rel={isNewWindowMode ? "noopener noreferrer" : undefined}
+                                            className="text-lg font-semibold text-gray-900 dark:text-white mb-2 hover:text-orange-500 cursor-pointer block"
+                                        >
+                                            {post.title || '제목 없음'}
+                                            {isNewWindowMode && (
+                                                <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
                                             )}
-                                            {post.replyNum && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.replyNum} 답글</span>
-                                                    <span className="sm:hidden">{post.replyNum}</span>
-                                                </div>
-                                            )}
-                                            {post.views && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.views} 조회</span>
-                                                    <span className="sm:hidden">{post.views}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                        </a>
+                                    ) : (
+                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                                            {post.title || '제목 없음'}
+                                        </h2>
+                                    )}
+
+                                    {post.content && (
+                                        <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
+                                            {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
+                                        </p>
+                                    )}
+
+                                    <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                                        {post.likes && (
+                                            <div className="flex items-center space-x-1 px-2 py-1">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                </svg>
+                                                <span className="hidden sm:inline">{post.likes} 추천</span>
+                                                <span className="sm:hidden">{post.likes}</span>
+                                            </div>
+                                        )}
+                                        {post.replyNum && (
+                                            <div className="flex items-center space-x-1 px-2 py-1">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                </svg>
+                                                <span className="hidden sm:inline">{post.replyNum} 답글</span>
+                                                <span className="sm:hidden">{post.replyNum}</span>
+                                            </div>
+                                        )}
+                                        {post.views && (
+                                            <div className="flex items-center space-x-1 px-2 py-1">
+                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                </svg>
+                                                <span className="hidden sm:inline">{post.views} 조회</span>
+                                                <span className="sm:hidden">{post.views}</span>
+                                            </div>
+                                        )}
+                                    </div>
                                 </div>
                             </article>
                         ))}
@@ -1149,11 +1150,11 @@ export default function Home() {
                     )}
 
                     {/* No Posts Message */}
-                    {!loading && posts.length === 0 && !error && (
+                    {/* {!loading && posts.length === 0 && !error && (
                         <div className="text-center py-8">
                             <p className="text-gray-500 dark:text-gray-400">아직 포스트가 없습니다.</p>
                         </div>
-                    )}
+                    )} */}
 
                     {/* Filtered No Posts Message */}
                     {!loading && posts.length > 0 && filteredPosts.length === 0 && selectedSites.size > 0 && (
