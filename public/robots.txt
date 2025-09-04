@@ -1,0 +1,55 @@
+# robots.txt for shooq.live
+
+User-agent: *
+Allow: /
+
+# 허용할 주요 페이지들
+Allow: /
+Allow: /sadari
+Allow: /api/
+
+# 차단할 파일들 (필요시)
+Disallow: /admin
+Disallow: /private
+Disallow: /*.json$
+Disallow: /*?*utm_*
+Disallow: /*?*fbclid*
+
+# 크롤링 속도 조절 (초 단위)
+Crawl-delay: 1
+
+# 사이트맵 위치
+Sitemap: https://shooq.live/sitemap.xml
+
+# 주요 검색엔진별 설정
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: NaverBot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Yeti
+Allow: /
+Crawl-delay: 1
+
+User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Twitterbot
+Allow: /
+
+# 악성 봇 차단
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /

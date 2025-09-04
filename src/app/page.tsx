@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 
 // localStorage 키 상수
@@ -9,7 +9,8 @@ const STORAGE_KEYS = {
     NEW_WINDOW_MODE: 'shooq-newWindowMode',
     SELECTED_SITES: 'shooq-selectedSites',
     SEARCH_KEYWORD: 'shooq-searchKeyword',
-    IS_POPULAR_MODE: 'shooq-isPopularMode'
+    IS_POPULAR_MODE: 'shooq-isPopularMode',
+    READ_POSTS: 'shooq-readPosts'
 } as const;
 
 // localStorage 유틸리티 함수
@@ -84,6 +85,7 @@ export default function Home() {
     // 검색 상태
     const [searchKeyword, setSearchKeyword] = useState('');
     const [isSearchMode, setIsSearchMode] = useState(false);
+    const searchKeywordRef = useRef('');
 
     // 인기글/최신글 토글 상태 (기본값: false = 최신글)
     const [isPopularMode, setIsPopularMode] = useState(false);
@@ -91,6 +93,32 @@ export default function Home() {
     // 사이드바 호버 상태
     const [isSidebarHovered, setIsSidebarHovered] = useState(false);
     const [isMobileSidebarHovered, setIsMobileSidebarHovered] = useState(false);
+
+    // 읽은 글 관리
+    const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
+
+    // HTML 엔티티 디코딩 함수
+    const decodeHtmlEntities = (text: string) => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = text;
+        return textarea.value;
+    };
+
+    // 읽은 글 관리 함수들
+    const markPostAsRead = useCallback((postId: string) => {
+        setReadPosts(prev => {
+            const newSet = new Set(prev);
+            newSet.add(postId);
+            // localStorage에 저장 (최근 1000개만 유지)
+            const readPostsArray = Array.from(newSet).slice(-1000);
+            StorageUtils.setItem(STORAGE_KEYS.READ_POSTS, JSON.stringify(readPostsArray));
+            return new Set(readPostsArray);
+        });
+    }, []);
+
+    const isPostRead = useCallback((postId: string) => {
+        return readPosts.has(postId);
+    }, [readPosts]);
 
 
     // 날짜 포맷팅 함수
@@ -173,7 +201,7 @@ export default function Home() {
     };
 
     // 초기 데이터 로드
-    const loadInitialData = useCallback(async (filterSites?: string[]) => {
+    const loadInitialData = useCallback(async (filterSites?: string[], searchQuery?: string) => {
         try {
             setLoading(true);
             setError(null);
@@ -188,7 +216,7 @@ export default function Home() {
                     undefined,
                     sitesArray,
                     sortByValue,
-                    isSearchMode ? searchKeyword : undefined
+                    searchQuery
                 ),
                 ApiService.getSites().catch(() => []) // 사이트 로드 실패해도 계속 진행
             ]);
@@ -205,7 +233,7 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    }, [selectedSites, isSearchMode, searchKeyword, isPopularMode]);
+    }, [selectedSites, isPopularMode]);
 
 
     // 더 많은 포스트 로드
@@ -224,7 +252,7 @@ export default function Home() {
                 undefined,
                 sitesArray,
                 sortByValue,
-                isSearchMode ? searchKeyword : undefined
+                isSearchMode ? searchKeywordRef.current : undefined
             );
 
             setPosts(prev => [...prev, ...result.data]);
@@ -236,7 +264,7 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, searchKeyword, isPopularMode]);
+    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, isPopularMode]);
 
     // 홈 버튼 클릭 시 새글 불러오기 (검색 상태 유지)
     const handleHomeClick = () => {
@@ -247,6 +275,7 @@ export default function Home() {
     const handleSearch = useCallback((keyword: string) => {
         const trimmedKeyword = keyword.trim();
         setSearchKeyword(trimmedKeyword);
+        searchKeywordRef.current = trimmedKeyword;
         setIsSearchMode(!!trimmedKeyword);
         setCurrentPage(1);
         setPosts([]);
@@ -258,12 +287,13 @@ export default function Home() {
             StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
         }
 
-        loadInitialData();
+        loadInitialData(undefined, trimmedKeyword || undefined);
     }, [loadInitialData]);
 
     // 검색 취소
     const handleClearSearch = useCallback(() => {
         setSearchKeyword('');
+        searchKeywordRef.current = '';
         setIsSearchMode(false);
         setCurrentPage(1);
         setPosts([]);
@@ -385,7 +415,7 @@ export default function Home() {
         if (sites.length > 0) { // 사이트 목록이 로드된 후에만 실행
             loadInitialData();
         }
-    }, [selectedSites, sites.length, searchKeyword, isSearchMode, loadInitialData]);
+    }, [selectedSites, sites.length, isSearchMode, loadInitialData]);
 
     // 초기 다크 모드 및 새창 모드 설정
     useEffect(() => {
@@ -416,12 +446,26 @@ export default function Home() {
             const savedSearchKeyword = StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
             if (savedSearchKeyword) {
                 setSearchKeyword(savedSearchKeyword);
+                searchKeywordRef.current = savedSearchKeyword;
                 setIsSearchMode(true);
             }
 
             // 정렬 상태 복원
             const savedIsPopularMode = StorageUtils.getBoolean(STORAGE_KEYS.IS_POPULAR_MODE, false);
             setIsPopularMode(savedIsPopularMode);
+
+            // 읽은 글 목록 복원
+            const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
+            if (savedReadPosts) {
+                try {
+                    const readPostsArray = JSON.parse(savedReadPosts);
+                    if (Array.isArray(readPostsArray)) {
+                        setReadPosts(new Set(readPostsArray));
+                    }
+                } catch (error) {
+                    console.warn('Failed to parse read posts from localStorage:', error);
+                }
+            }
 
             console.log('Settings loaded:', {
                 theme: savedTheme || (prefersDark ? 'dark (system)' : 'light (system)'),
@@ -522,7 +566,7 @@ export default function Home() {
                                             handleSearch(e.currentTarget.value);
                                         }
                                     }}
-                                    placeholder="게시물 검색"
+                                    placeholder="게시물 검색 (엔터로 검색)"
                                     className="w-full px-4 py-2 pr-8 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                                 />
                                 {isSearchMode && (
@@ -1028,7 +1072,7 @@ export default function Home() {
                     )}
 
                     {/* Loading Initial Data */}
-                    {loading && posts.length === 0 && (
+                    {loading && posts.length === 0 && !searchKeyword && (
                         <div className="flex justify-center items-center py-8">
                             {/* <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                             <span className="ml-3 text-gray-600 dark:text-gray-400">데이터를 불러오는 중...</span> */}
@@ -1036,11 +1080,26 @@ export default function Home() {
                         </div>
                     )}
 
+                    {/* Loading Search Results */}
+                    {loading && posts.length === 0 && isSearchMode && (
+                        <div className="flex justify-center items-center py-8">
+                            <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
+                        </div>
+                    )}
+
                     {/* Posts */}
                     <div className="space-y-4">
-                        {filteredPosts.map((post, index) => (
-                            <article key={`post-${post.no}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600 transition-colors">
-                                <div className="p-4">
+                        {filteredPosts.map((post, index) => {
+                            const postId = `${post.site}-${post.no}`;
+                            const isRead = isPostRead(postId);
+                            
+                            return (
+                                <article key={`post-${post.no}-${index}`} className={`rounded-lg border transition-colors ${
+                                    isRead 
+                                        ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700' 
+                                        : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                }`}>
+                                    <div className="p-4">
                                     <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                                         {post.site && (
                                             <>
@@ -1073,9 +1132,12 @@ export default function Home() {
                                             href={post.url}
                                             target={isNewWindowMode ? "_blank" : "_self"}
                                             rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                                            className="text-lg font-semibold text-gray-900 dark:text-white mb-2 hover:text-orange-500 cursor-pointer block"
+                                            className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${
+                                                isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                            }`}
+                                            onClick={() => markPostAsRead(postId)}
                                         >
-                                            {post.title || '제목 없음'}
+                                            {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                                             {isNewWindowMode && (
                                                 <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -1083,14 +1145,30 @@ export default function Home() {
                                             )}
                                         </a>
                                     ) : (
-                                        <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                                            {post.title || '제목 없음'}
+                                        <h2 className={`text-lg font-semibold mb-2 ${
+                                            isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                        }`}>
+                                            {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                                         </h2>
                                     )}
 
                                     {post.content && (
-                                        <p className="text-gray-700 dark:text-gray-300 text-sm mb-3">
-                                            {post.content.length > 200 ? `${post.content.substring(0, 200)}...` : post.content}
+                                        <p className={`text-sm mb-3 ${
+                                            isRead ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'
+                                        }`}>
+                                            {post.url ? (
+                                                <a
+                                                    href={post.url}
+                                                    target={isNewWindowMode ? "_blank" : "_self"}
+                                                    rel={isNewWindowMode ? "noopener noreferrer" : undefined}
+                                                    className="hover:text-orange-500 cursor-pointer"
+                                                    onClick={() => markPostAsRead(postId)}
+                                                >
+                                                    {post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)}
+                                                </a>
+                                            ) : (
+                                                post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
+                                            )}
                                         </p>
                                     )}
 
@@ -1126,7 +1204,8 @@ export default function Home() {
                                     </div>
                                 </div>
                             </article>
-                        ))}
+                            );
+                        })}
                     </div>
 
                     {/* Loading More Posts */}
