@@ -565,6 +565,13 @@ export default function Home() {
                 sortType: savedSortType,
                 showUnreadOnly: savedShowUnreadOnly
             });
+
+            // 페이지 접속 로그 기록
+            ApiService.logAccess().then(() => {
+                console.log('Access logged successfully');
+            }).catch((error) => {
+                console.warn('Failed to log access:', error);
+            });
         }
     }, []);
 
