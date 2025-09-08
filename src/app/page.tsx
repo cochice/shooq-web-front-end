@@ -839,6 +839,7 @@ export default function Home() {
                                             onClick={() => {
                                                 changeSortType(option.key);
                                                 setIsSortDropdownOpen(false);
+                                                setIsSidebarOpen(false);
                                             }}
                                             className={`w-full flex items-center space-x-3 py-3 px-3 text-left hover:bg-gray-700 transition-colors ${sortType === option.key ? 'text-orange-400 bg-gray-700' : 'text-gray-300'
                                                 } ${option.key === SORT_OPTIONS[0].key ? 'rounded-t-lg' : ''} ${option.key === SORT_OPTIONS[SORT_OPTIONS.length - 1].key ? 'rounded-b-lg' : ''}`}
