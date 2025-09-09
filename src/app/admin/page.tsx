@@ -68,6 +68,9 @@ export default function AdminPage() {
     const [dailySiteStats, setDailySiteStats] = useState<DailySiteStats[]>([]);
     const [dailySiteStatsLoading, setDailySiteStatsLoading] = useState(true);
 
+    // 사이트 관리 펼치기/접기 상태
+    const [showAllSites, setShowAllSites] = useState(false);
+
     // 대시보드 통계 데이터 로드
     const loadStats = async () => {
         try {
@@ -645,49 +648,77 @@ export default function AdminPage() {
                                         ))}
                                     </div>
                                 ) : siteStats.length > 0 ? (
-                                    siteStats.map((site) => {
-                                        const lastPostDate = site.lastPostDate ? new Date(site.lastPostDate) : null;
-                                        const formattedDate = lastPostDate ?
-                                            `${lastPostDate.getFullYear()}-${(lastPostDate.getMonth() + 1).toString().padStart(2, '0')}-${lastPostDate.getDate().toString().padStart(2, '0')} ${lastPostDate.getHours().toString().padStart(2, '0')}:${lastPostDate.getMinutes().toString().padStart(2, '0')}` :
-                                            '정보 없음';
+                                    <>
+                                        {(showAllSites ? siteStats : siteStats.slice(0, 6)).map((site) => {
+                                            const lastPostDate = site.lastPostDate ? new Date(site.lastPostDate) : null;
+                                            const formattedDate = lastPostDate ?
+                                                `${lastPostDate.getFullYear()}-${(lastPostDate.getMonth() + 1).toString().padStart(2, '0')}-${lastPostDate.getDate().toString().padStart(2, '0')} ${lastPostDate.getHours().toString().padStart(2, '0')}:${lastPostDate.getMinutes().toString().padStart(2, '0')}` :
+                                                '정보 없음';
 
-                                        return (
-                                            <div key={site.site} className="py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                                        <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.site}</span>
+                                            return (
+                                                <div key={site.site} className="py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                    <div className="flex items-center justify-between">
+                                                        <div className="flex items-center space-x-3">
+                                                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.site}</span>
+                                                        </div>
+                                                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성</span>
                                                     </div>
-                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성</span>
+                                                    <div className="ml-6 mt-2 space-y-1">
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>전체 글수:</span>
+                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.postCount.toLocaleString()}개</span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 수집:</span>
+                                                            <span className={`font-medium ${site.todayCount > 0 ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
+                                                                {site.todayCount.toLocaleString()}개
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex justify-between text-sm">
+                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 등록:</span>
+                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{formattedDate}</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
-                                                <div className="ml-6 mt-2 space-y-1">
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>전체 글수:</span>
-                                                        <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.postCount.toLocaleString()}개</span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 수집:</span>
-                                                        <span className={`font-medium ${site.todayCount > 0 ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
-                                                            {site.todayCount.toLocaleString()}개
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between text-sm">
-                                                        <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 등록:</span>
-                                                        <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{formattedDate}</span>
-                                                    </div>
+                                            );
+                                        })}
+                                        
+                                        {siteStats.length > 6 && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAllSites(!showAllSites)}
+                                                className={`w-full py-3 px-4 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${isDarkMode
+                                                    ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
+                                                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800'
+                                                }`}
+                                            >
+                                                <div className="flex items-center justify-center space-x-2">
+                                                    {showAllSites ? (
+                                                        <>
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                            </svg>
+                                                            <span>접기 ({siteStats.length - 6}개 숨기기)</span>
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                            </svg>
+                                                            <span>더보기 ({siteStats.length - 6}개 더 보기)</span>
+                                                        </>
+                                                    )}
                                                 </div>
-                                            </div>
-                                        );
-                                    })
+                                            </button>
+                                        )}
+                                    </>
                                 ) : (
                                     <div className="text-center py-6">
                                         <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>사이트 데이터가 없습니다</span>
                                     </div>
                                 )}
                             </div>
-                            <button className="w-full mt-4 px-4 py-2 text-sm font-medium text-orange-600 dark:text-orange-400 border border-orange-600 dark:border-orange-400 rounded-lg hover:bg-orange-50 dark:hover:bg-orange-900/30 transition-colors">
-                                사이트 설정 관리
-                            </button>
                         </div>
                     </div>
 
