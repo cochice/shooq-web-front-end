@@ -37,6 +37,7 @@ export interface AdminStats {
 export interface SiteStats {
   site: string;
   postCount: number;
+  todayCount: number;
   lastPostDate: string;
 }
 
@@ -46,6 +47,16 @@ export interface RecentPost {
   date: string;
   regDate: string;
   site: string;
+}
+
+export interface DailyCrawlStats {
+  date: string;
+  count: number;
+}
+
+export interface DailySiteStats {
+  site: string;
+  count: number;
 }
 
 export class ApiService {
@@ -140,5 +151,15 @@ export class ApiService {
   // 컨텐츠 시간 기준 최근 글 조회
   static async getRecentPostsByContentTime(count: number = 5): Promise<RecentPost[]> {
     return this.fetchApi<RecentPost[]>(`/admin/recent-posts-by-content?count=${count}`);
+  }
+
+  // 일주일간 일별 크롤링 통계 조회
+  static async getWeeklyCrawlStats(): Promise<DailyCrawlStats[]> {
+    return this.fetchApi<DailyCrawlStats[]>('/admin/weekly-crawl-stats');
+  }
+
+  // 오늘 사이트별 크롤링 통계 조회
+  static async getDailySiteStats(): Promise<DailySiteStats[]> {
+    return this.fetchApi<DailySiteStats[]>('/admin/daily-site-stats');
   }
 }
