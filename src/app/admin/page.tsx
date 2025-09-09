@@ -262,10 +262,12 @@ export default function AdminPage() {
                     size: 14,
                     weight: 'bold' as const,
                 },
-                formatter: (value: number, context: any) => {
-                    const total = context.dataset.data.reduce((a: number, b: number) => a + b, 0);
-                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                    return value > 0 ? `${value}\n(${percentage}%)` : '';
+                formatter: (value: unknown, context: unknown) => {
+                    const numValue = Number(value);
+                    const ctx = context as { dataset: { data: number[] } };
+                    const total = ctx.dataset.data.reduce((a: number, b: number) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((numValue / total) * 100) : 0;
+                    return numValue > 0 ? `${numValue}\n(${percentage}%)` : '';
                 },
             },
         },
