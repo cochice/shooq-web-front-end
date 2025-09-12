@@ -14,22 +14,24 @@ const STORAGE_KEYS = {
     SHOW_UNREAD_ONLY: 'shooq-showUnreadOnly'
 } as const;
 
-// 정렬 타입 상수
-const SORT_TYPES = {
-    DATE: 'latest',
-    VIEWS: 'views',
-    LIKES: 'popular',
-    REPLY_NUM: 'comments'
+// 시간 기반 이슈 타입 상수
+const ISSUE_TYPES = {
+    LATEST: '1h',
+    THREE_HOURS: '3h',
+    NINE_HOURS: '9h',
+    ONE_DAY: '24h',
+    SEVEN_DAYS: '7d'
 } as const;
 
-type SortType = typeof SORT_TYPES[keyof typeof SORT_TYPES];
+type IssueType = typeof ISSUE_TYPES[keyof typeof ISSUE_TYPES];
 
-// 정렬 옵션 정보
-const SORT_OPTIONS = [
-    { key: SORT_TYPES.DATE, label: '최신글', icon: 'clock' },
-    { key: SORT_TYPES.VIEWS, label: '조회순', icon: 'eye' },
-    { key: SORT_TYPES.LIKES, label: '인기순', icon: 'heart' },
-    { key: SORT_TYPES.REPLY_NUM, label: '댓글순', icon: 'chat' }
+// 시간 기반 이슈 옵션 정보
+const ISSUE_OPTIONS = [
+    { key: ISSUE_TYPES.LATEST, label: '최신 이슈', icon: 'clock' },
+    { key: ISSUE_TYPES.THREE_HOURS, label: '3시간 내 이슈', icon: 'clock-3' },
+    { key: ISSUE_TYPES.NINE_HOURS, label: '9시간 내 이슈', icon: 'clock-9' },
+    { key: ISSUE_TYPES.ONE_DAY, label: '24시간 내 이슈', icon: 'clock-24' },
+    { key: ISSUE_TYPES.SEVEN_DAYS, label: '최근 7일간의 이슈', icon: 'calendar' }
 ] as const;
 
 // localStorage 유틸리티 함수
@@ -106,8 +108,8 @@ export default function Home() {
     const [isSearchMode, setIsSearchMode] = useState(false);
     const searchKeywordRef = useRef('');
 
-    // 정렬 상태 (기본값: 최신글)
-    const [sortType, setSortType] = useState<SortType>(SORT_TYPES.DATE);
+    // 이슈 시간 상태 (기본값: 최신 이슈)
+    const [issueType, setIssueType] = useState<IssueType>(ISSUE_TYPES.LATEST);
 
     // 사이드바 호버 상태
     const [isSidebarHovered, setIsSidebarHovered] = useState(false);
@@ -125,6 +127,9 @@ export default function Home() {
     // 안 본 글만 보기 모드
     const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
+    // 뉴스 토글 모드 (기본값: false - 뉴스 숨김)
+    const [showNews, setShowNews] = useState(false);
+
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
         const textarea = document.createElement('textarea');
@@ -133,7 +138,7 @@ export default function Home() {
     };
 
     // 아이콘 렌더링 함수
-    const renderSortIcon = (iconType: string) => {
+    const renderIssueIcon = (iconType: string) => {
         switch (iconType) {
             case 'clock':
                 return (
@@ -141,27 +146,39 @@ export default function Home() {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                 );
-            case 'eye':
+            case 'clock-3':
                 return (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <text x="12" y="16" textAnchor="middle" fontSize="6" fill="currentColor">3</text>
                     </svg>
                 );
-            case 'heart':
+            case 'clock-9':
                 return (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <text x="12" y="16" textAnchor="middle" fontSize="6" fill="currentColor">9</text>
                     </svg>
                 );
-            case 'chat':
+            case 'clock-24':
                 return (
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        <text x="12" y="16" textAnchor="middle" fontSize="5" fill="currentColor">24</text>
+                    </svg>
+                );
+            case 'calendar':
+                return (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                 );
             default:
-                return null;
+                return (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                );
         }
     };
 
@@ -268,17 +285,41 @@ export default function Home() {
             setShowTopLoadingBar(true);
             setError(null);
 
-            const sitesArray = filterSites || (selectedSites.size > 0 ? Array.from(selectedSites) : undefined);
+            let sitesArray: string[] | undefined = filterSites;
+            
+            // filterSites가 없으면 selectedSites 사용
+            if (!sitesArray) {
+                if (selectedSites.size > 0) {
+                    sitesArray = Array.from(selectedSites);
+                } else {
+                    // 선택된 사이트가 없으면 빈 배열 (아무것도 조회하지 않음)
+                    sitesArray = [];
+                }
+            }
+            
+            // 뉴스 필터링은 백엔드에서 isNewsYn 파라미터로 처리됨
 
-            const sortByValue = sortType;
+            const issueTimeValue = issueType;
+            
+            // API 호출 파라미터 로깅
+            console.log("=== API Call Parameters ===");
+            console.log("sitesArray:", sitesArray);
+            console.log("issueTimeValue:", issueTimeValue);
+            console.log("searchQuery:", searchQuery);
+            console.log("selectedSites size:", selectedSites.size);
+            console.log("showNews:", showNews);
+            console.log("===========================");
+            
             const [postsResult, sitesResult] = await Promise.all([
                 ApiService.getPosts(
                     1,
                     10,
                     undefined,
                     sitesArray,
-                    sortByValue,
-                    searchQuery
+                    issueTimeValue,
+                    searchQuery,
+                    undefined, // author
+                    showNews ? 'y' : 'n' // isNewsYn
                 ),
                 ApiService.getSites().catch(() => []) // 사이트 로드 실패해도 계속 진행
             ]);
@@ -296,7 +337,7 @@ export default function Home() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [selectedSites, sortType]);
+    }, [selectedSites, issueType, showNews]);
 
 
     // 더 많은 포스트 로드
@@ -310,15 +351,28 @@ export default function Home() {
             if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
                 setShowTopLoadingBar(true);
             }
-            const sitesArray = selectedSites.size > 0 ? Array.from(selectedSites) : undefined;
-            const sortByValue = sortType;
+            
+            let sitesArray: string[] | undefined;
+            
+            if (selectedSites.size > 0) {
+                sitesArray = Array.from(selectedSites);
+            } else {
+                // 선택된 사이트가 없으면 빈 배열 (아무것도 조회하지 않음)
+                sitesArray = [];
+            }
+            
+            // 뉴스 필터링은 백엔드에서 isNewsYn 파라미터로 처리됨
+            
+            const issueTimeValue = issueType;
             const result = await ApiService.getPosts(
                 currentPage + 1,
                 10,
                 undefined,
                 sitesArray,
-                sortByValue,
-                isSearchMode ? searchKeywordRef.current : undefined
+                issueTimeValue,
+                isSearchMode ? searchKeywordRef.current : undefined,
+                undefined, // author
+                showNews ? 'y' : 'n' // isNewsYn
             );
 
             setPosts(prev => [...prev, ...result.data]);
@@ -331,7 +385,7 @@ export default function Home() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, sortType]);
+    }, [currentPage, loading, hasMore, selectedSites, isSearchMode, issueType, showNews]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 사이트/검색 필터만 초기화
     const handleHomeClick = () => {
@@ -396,17 +450,12 @@ export default function Home() {
         }
     }, []);
 
-    // 컴포넌트 마운트 시 초기 데이터 로드
-    useEffect(() => {
-        loadInitialData();
-    }, [loadInitialData]);
-
-    // 정렬 방식 변경 시 데이터 리로드
+    // 이슈 시간 변경 시 데이터 리로드
     useEffect(() => {
         setPosts([]);
         setCurrentPage(1);
         loadInitialData();
-    }, [sortType, loadInitialData]);
+    }, [issueType]);
 
     // 스크롤 이벤트 핸들러
     useEffect(() => {
@@ -465,10 +514,20 @@ export default function Home() {
         StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
-    // 정렬 방식 변경
-    const changeSortType = (newSortType: SortType) => {
-        setSortType(newSortType);
-        StorageUtils.setItem(STORAGE_KEYS.SORT_TYPE, newSortType);
+    // 뉴스 토글
+    const toggleShowNews = () => {
+        const newShowNews = !showNews;
+        setShowNews(newShowNews);
+        // 토글 변경 시 데이터 리로드
+        setPosts([]);
+        setCurrentPage(1);
+        loadInitialData();
+    };
+
+    // 이슈 시간 변경
+    const changeIssueType = (newIssueType: IssueType) => {
+        setIssueType(newIssueType);
+        StorageUtils.setItem(STORAGE_KEYS.SORT_TYPE, newIssueType);
     };
 
     // 사이트 필터 토글
@@ -494,12 +553,19 @@ export default function Home() {
         StorageUtils.setStringSet(STORAGE_KEYS.SELECTED_SITES, emptySet);
     };
 
+    // 컴포넌트 마운트 시 초기 데이터 로드
+    useEffect(() => {
+        loadInitialData();
+    }, []); // 마운트 시 한 번만 실행
+
     // 필터 및 검색 상태 변경 시 데이터 다시 로드
     useEffect(() => {
         if (sites.length > 0) { // 사이트 목록이 로드된 후에만 실행
+            setPosts([]);
+            setCurrentPage(1);
             loadInitialData();
         }
-    }, [selectedSites, sites.length, isSearchMode, loadInitialData]);
+    }, [selectedSites, isSearchMode]);
 
     // 초기 다크 모드 및 새창 모드 설정
     useEffect(() => {
@@ -534,10 +600,10 @@ export default function Home() {
                 setIsSearchMode(true);
             }
 
-            // 정렬 상태 복원
-            const savedSortType = StorageUtils.getItem(STORAGE_KEYS.SORT_TYPE, SORT_TYPES.DATE);
-            if (Object.values(SORT_TYPES).includes(savedSortType as SortType)) {
-                setSortType(savedSortType as SortType);
+            // 이슈 시간 상태 복원
+            const savedIssueType = StorageUtils.getItem(STORAGE_KEYS.SORT_TYPE, ISSUE_TYPES.LATEST);
+            if (Object.values(ISSUE_TYPES).includes(savedIssueType as IssueType)) {
+                setIssueType(savedIssueType as IssueType);
             }
 
             // 읽은 글 목록 복원
@@ -562,7 +628,7 @@ export default function Home() {
                 newWindowMode: savedNewWindowMode,
                 searchKeyword: savedSearchKeyword,
                 selectedSites: Array.from(savedSelectedSites),
-                sortType: savedSortType,
+                issueType: savedIssueType,
                 showUnreadOnly: savedShowUnreadOnly
             });
 
@@ -578,7 +644,7 @@ export default function Home() {
     // 드롭다운 외부 클릭 시 닫기
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
-            if (isSortDropdownOpen && !(event.target as Element).closest('.sort-dropdown')) {
+            if (isSortDropdownOpen && !(event.target as Element).closest('.issue-dropdown')) {
                 setIsSortDropdownOpen(false);
             }
         };
@@ -673,19 +739,8 @@ export default function Home() {
                     {/* Main content area */}
                     <div className="flex-1 px-4 py-3">
                         <div className="max-w-4xl relative flex items-center justify-start space-x-4">
-                            {/* Mobile Logo and Hamburger Menu */}
+                            {/* Mobile Hamburger Menu and Logo */}
                             <div className="lg:hidden flex items-center space-x-4">
-                                <button
-                                    type="button"
-                                    onClick={handleHomeClick}
-                                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
-                                >
-                                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                                        <span className="text-white font-bold text-xl">S</span>
-                                    </div>
-                                    <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">shooq</span>
-                                </button>
-
                                 <button
                                     type="button"
                                     onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -701,6 +756,17 @@ export default function Home() {
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                                         </svg>
                                     )}
+                                </button>
+
+                                <button
+                                    type="button"
+                                    onClick={handleHomeClick}
+                                    className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
+                                >
+                                    <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                                        <span className="text-white font-bold text-xl">S</span>
+                                    </div>
+                                    <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">shooq</span>
                                 </button>
                             </div>
 
@@ -814,16 +880,16 @@ export default function Home() {
                         </div>
 
 
-                        {/* 정렬 방식 선택 - 모바일 */}
-                        <div className="relative mb-4 sort-dropdown">
+                        {/* 이슈 시간 선택 - 모바일 */}
+                        <div className="relative mb-4 issue-dropdown hidden">
                             <button
                                 type="button"
                                 onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                                 className="w-full flex items-center justify-between text-gray-300 hover:text-white hover:bg-gray-800 font-medium py-3 px-3 rounded-lg transition-colors"
                             >
                                 <div className="flex items-center space-x-3">
-                                    {renderSortIcon(SORT_OPTIONS.find(option => option.key === sortType)?.icon || 'clock')}
-                                    <span>{SORT_OPTIONS.find(option => option.key === sortType)?.label || '최신글'}</span>
+                                    {renderIssueIcon(ISSUE_OPTIONS.find(option => option.key === issueType)?.icon || 'clock')}
+                                    <span>{ISSUE_OPTIONS.find(option => option.key === issueType)?.label || '최신 이슈'}</span>
                                 </div>
                                 <svg className={`w-4 h-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -832,19 +898,19 @@ export default function Home() {
 
                             {isSortDropdownOpen && (
                                 <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50">
-                                    {SORT_OPTIONS.map((option) => (
+                                    {ISSUE_OPTIONS.map((option) => (
                                         <button
                                             key={option.key}
                                             type="button"
                                             onClick={() => {
-                                                changeSortType(option.key);
+                                                changeIssueType(option.key);
                                                 setIsSortDropdownOpen(false);
                                                 setIsSidebarOpen(false);
                                             }}
-                                            className={`w-full flex items-center space-x-3 py-3 px-3 text-left hover:bg-gray-700 transition-colors ${sortType === option.key ? 'text-orange-400 bg-gray-700' : 'text-gray-300'
-                                                } ${option.key === SORT_OPTIONS[0].key ? 'rounded-t-lg' : ''} ${option.key === SORT_OPTIONS[SORT_OPTIONS.length - 1].key ? 'rounded-b-lg' : ''}`}
+                                            className={`w-full flex items-center space-x-3 py-3 px-3 text-left hover:bg-gray-700 transition-colors ${issueType === option.key ? 'text-orange-400 bg-gray-700' : 'text-gray-300'
+                                                } ${option.key === ISSUE_OPTIONS[0].key ? 'rounded-t-lg' : ''} ${option.key === ISSUE_OPTIONS[ISSUE_OPTIONS.length - 1].key ? 'rounded-b-lg' : ''}`}
                                         >
-                                            {renderSortIcon(option.icon)}
+                                            {renderIssueIcon(option.icon)}
                                             <span>{option.label}</span>
                                         </button>
                                     ))}
@@ -853,7 +919,7 @@ export default function Home() {
                         </div>
 
                         {/* 경계선 */}
-                        <div className="border-b border-gray-700 mb-4"></div>
+                        <div className="border-b border-gray-700 mb-4 hidden"></div>
 
                         <div
                             className={`flex-1 overflow-y-auto ${!isMobileSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-500 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
@@ -874,24 +940,35 @@ export default function Home() {
                                                 <div>
                                                     <div className="flex items-center justify-between mb-3">
                                                         <h3 className="font-medium text-gray-400 text-sm uppercase tracking-wide">뉴스 ({news.length}개)</h3>
-                                                        {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                        <div className="flex items-center space-x-2">
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
-                                                                    const newSet = new Set(selectedSites);
-                                                                    news.forEach(site => newSet.delete(site));
-                                                                    setSelectedSites(newSet);
-                                                                }}
-                                                                className="text-xs text-orange-400 hover:text-orange-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                                                                onClick={toggleShowNews}
+                                                                className={`w-10 h-5 rounded-full p-0.5 transition-colors ${showNews ? 'bg-orange-500' : 'bg-gray-600'}`}
+                                                                aria-label={showNews ? "뉴스 숨기기" : "뉴스 보이기"}
                                                             >
-                                                                뉴스 해제
+                                                                <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${showNews ? 'translate-x-5' : 'translate-x-0'}`} />
                                                             </button>
-                                                        )}
+                                                            {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => {
+                                                                        const newSet = new Set(selectedSites);
+                                                                        news.forEach(site => newSet.delete(site));
+                                                                        setSelectedSites(newSet);
+                                                                    }}
+                                                                    className="text-xs text-orange-400 hover:text-orange-300 px-2 py-1 rounded hover:bg-gray-800 transition-colors"
+                                                                >
+                                                                    뉴스 해제
+                                                                </button>
+                                                            )}
+                                                        </div>
                                                     </div>
-                                                    <div className="space-y-1">
-                                                        {news.map((site) => {
-                                                            const isSelected = selectedSites.has(site);
-                                                            return (
+                                                    {showNews && (
+                                                        <div className="space-y-1">
+                                                            {news.map((site) => {
+                                                                const isSelected = selectedSites.has(site);
+                                                                return (
                                                                 <div key={site} className="flex items-center justify-between py-3 px-3 hover:bg-gray-800 rounded-lg transition-colors">
                                                                     <div className="flex items-center space-x-3 cursor-pointer flex-1" onClick={() => toggleSiteFilter(site)}>
                                                                         <div
@@ -922,6 +999,7 @@ export default function Home() {
                                                             );
                                                         })}
                                                     </div>
+                                                    )}
                                                 </div>
                                             )}
 
@@ -1015,16 +1093,16 @@ export default function Home() {
                     <div className="sticky top-20">
                         <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700 max-h-[calc(100vh-8rem)] flex flex-col">
 
-                            {/* 정렬 방식 선택 - 데스크탑 */}
-                            <div className="relative mb-4 sort-dropdown">
+                            {/* 이슈 시간 선택 - 데스크탑 */}
+                            <div className="relative mb-4 issue-dropdown hidden">
                                 <button
                                     type="button"
                                     onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
                                     className="w-full flex items-center justify-between text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white font-semibold py-3 px-2 transition-colors"
                                 >
                                     <div className="flex items-center space-x-3">
-                                        {renderSortIcon(SORT_OPTIONS.find(option => option.key === sortType)?.icon || 'clock')}
-                                        <span>{SORT_OPTIONS.find(option => option.key === sortType)?.label || '최신글'}</span>
+                                        {renderIssueIcon(ISSUE_OPTIONS.find(option => option.key === issueType)?.icon || 'clock')}
+                                        <span>{ISSUE_OPTIONS.find(option => option.key === issueType)?.label || '최신 이슈'}</span>
                                     </div>
                                     <svg className={`w-4 h-4 transition-transform ${isSortDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -1033,18 +1111,18 @@ export default function Home() {
 
                                 {isSortDropdownOpen && (
                                     <div className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50">
-                                        {SORT_OPTIONS.map((option) => (
+                                        {ISSUE_OPTIONS.map((option) => (
                                             <button
                                                 key={option.key}
                                                 type="button"
                                                 onClick={() => {
-                                                    changeSortType(option.key);
+                                                    changeIssueType(option.key);
                                                     setIsSortDropdownOpen(false);
                                                 }}
-                                                className={`w-full flex items-center space-x-3 py-3 px-2 text-left hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${sortType === option.key ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/30' : 'text-gray-700 dark:text-gray-300'
-                                                    } ${option.key === SORT_OPTIONS[0].key ? 'rounded-t-lg' : ''} ${option.key === SORT_OPTIONS[SORT_OPTIONS.length - 1].key ? 'rounded-b-lg' : ''}`}
+                                                className={`w-full flex items-center space-x-3 py-3 px-2 text-left hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors ${issueType === option.key ? 'text-orange-500 bg-orange-50 dark:bg-orange-900/30' : 'text-gray-700 dark:text-gray-300'
+                                                    } ${option.key === ISSUE_OPTIONS[0].key ? 'rounded-t-lg' : ''} ${option.key === ISSUE_OPTIONS[ISSUE_OPTIONS.length - 1].key ? 'rounded-b-lg' : ''}`}
                                             >
-                                                {renderSortIcon(option.icon)}
+                                                {renderIssueIcon(option.icon)}
                                                 <span>{option.label}</span>
                                             </button>
                                         ))}
@@ -1053,7 +1131,7 @@ export default function Home() {
                             </div>
 
                             {/* 경계선 */}
-                            <div className="border-b border-gray-100 dark:border-gray-700 mb-4"></div>
+                            <div className="border-b border-gray-100 dark:border-gray-700 mb-4 hidden"></div>
                             <div
                                 className={`flex-1 overflow-y-auto min-h-0 ${!isSidebarHovered ? '[&::-webkit-scrollbar]:hidden' : '[&::-webkit-scrollbar]:w-2 [&::-webkit-scrollbar-thumb]:bg-gray-400 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent'}`}
                                 onWheel={handleSidebarWheel}
@@ -1074,24 +1152,35 @@ export default function Home() {
                                                     <div>
                                                         <div className="flex items-center justify-between mb-3">
                                                             <h3 className="font-semibold text-gray-900 dark:text-white">뉴스 ({news.length}개)</h3>
-                                                            {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                            <div className="flex items-center space-x-2">
                                                                 <button
                                                                     type="button"
-                                                                    onClick={() => {
-                                                                        const newSet = new Set(selectedSites);
-                                                                        news.forEach(site => newSet.delete(site));
-                                                                        setSelectedSites(newSet);
-                                                                    }}
-                                                                    className="text-xs text-orange-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
+                                                                    onClick={toggleShowNews}
+                                                                    className={`w-10 h-5 rounded-full p-0.5 transition-colors ${showNews ? 'bg-orange-500' : 'bg-gray-300 dark:bg-gray-600'}`}
+                                                                    aria-label={showNews ? "뉴스 숨기기" : "뉴스 보이기"}
                                                                 >
-                                                                    뉴스 해제
+                                                                    <div className={`w-4 h-4 bg-white rounded-full shadow-sm transform transition-transform ${showNews ? 'translate-x-5' : 'translate-x-0'}`} />
                                                                 </button>
-                                                            )}
+                                                                {selectedSites.size > 0 && news.some(site => selectedSites.has(site)) && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            const newSet = new Set(selectedSites);
+                                                                            news.forEach(site => newSet.delete(site));
+                                                                            setSelectedSites(newSet);
+                                                                        }}
+                                                                        className="text-xs text-orange-500 hover:text-orange-600 px-2 py-1 rounded hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
+                                                                    >
+                                                                        뉴스 해제
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="space-y-2">
-                                                            {news.map((site) => {
-                                                                const isSelected = selectedSites.has(site);
-                                                                return (
+                                                        {showNews && (
+                                                            <div className="space-y-2">
+                                                                {news.map((site) => {
+                                                                    const isSelected = selectedSites.has(site);
+                                                                    return (
                                                                     <div key={site} className="flex items-center justify-between py-3 px-2 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors">
                                                                         <div className="flex items-center space-x-3 cursor-pointer flex-1" onClick={() => toggleSiteFilter(site)}>
                                                                             <div
@@ -1122,6 +1211,7 @@ export default function Home() {
                                                                 );
                                                             })}
                                                         </div>
+                                                        )}
                                                     </div>
                                                 )}
 
@@ -1364,13 +1454,13 @@ export default function Home() {
                                                     <span className="sm:hidden">{post.likes}</span>
                                                 </div>
                                             )}
-                                            {post.replyNum && (
+                                            {post.reply_num && (
                                                 <div className="flex items-center space-x-1 px-2 py-1">
                                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                                                     </svg>
-                                                    <span className="hidden sm:inline">{post.replyNum} 답글</span>
-                                                    <span className="sm:hidden">{post.replyNum}</span>
+                                                    <span className="hidden sm:inline">{post.reply_num} 답글</span>
+                                                    <span className="sm:hidden">{post.reply_num}</span>
                                                 </div>
                                             )}
                                             {post.views && (

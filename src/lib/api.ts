@@ -11,9 +11,10 @@ export interface SiteBbsInfo {
   likes?: number;
   url?: string;
   site?: string;
-  regDate?: string;
-  replyNum?: string;
+  reg_date?: string;
+  reply_num?: string;
   content?: string;
+  posted_dt?: Date
 }
 
 export interface PagedResult<T> {
@@ -45,7 +46,7 @@ export interface RecentPost {
   no: number;
   title: string;
   date: string;
-  regDate: string;
+  reg_date: string;
   site: string;
 }
 
@@ -81,14 +82,16 @@ export class ApiService {
     pageSize: number = 10, 
     site?: string, 
     sites?: string[], 
-    sortBy: string = 'latest',
+    sortBy: string = '',
     keyword?: string,
-    author?: string
+    author?: string,
+    isNewsYn: 'y' | 'n' = 'n'
   ): Promise<PagedResult<SiteBbsInfo>> {
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString(),
       sortBy: sortBy,
+      isNewsYn: isNewsYn,
     });
     
     if (site) {
