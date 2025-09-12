@@ -63,7 +63,7 @@ export default function AdminPage() {
     // 주간 크롤링 통계 데이터
     const [weeklyCrawlStats, setWeeklyCrawlStats] = useState<DailyCrawlStats[]>([]);
     const [weeklyCrawlStatsLoading, setWeeklyCrawlStatsLoading] = useState(true);
-    
+
     // 오늘 사이트별 통계 데이터
     const [dailySiteStats, setDailySiteStats] = useState<DailySiteStats[]>([]);
     const [dailySiteStatsLoading, setDailySiteStatsLoading] = useState(true);
@@ -375,8 +375,8 @@ export default function AdminPage() {
                                 value={loginForm.username}
                                 onChange={(e) => setLoginForm(prev => ({ ...prev, username: e.target.value }))}
                                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${isDarkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                                     }`}
                                 placeholder="관리자 사용자명을 입력하세요"
                                 required
@@ -392,8 +392,8 @@ export default function AdminPage() {
                                 value={loginForm.password}
                                 onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
                                 className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent ${isDarkMode
-                                        ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
-                                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                    ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                    : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
                                     }`}
                                 placeholder="비밀번호를 입력하세요"
                                 required
@@ -418,8 +418,8 @@ export default function AdminPage() {
                             type="button"
                             onClick={goToHome}
                             className={`w-full border font-medium py-3 px-4 rounded-lg transition-colors ${isDarkMode
-                                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
-                                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                                ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                                : 'border-gray-300 text-gray-700 hover:bg-gray-50'
                                 }`}
                         >
                             홈으로 돌아가기
@@ -446,8 +446,8 @@ export default function AdminPage() {
                             <button
                                 onClick={toggleDarkMode}
                                 className={`p-2 rounded-lg transition-colors ${isDarkMode
-                                        ? 'text-gray-300 hover:bg-gray-700'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'text-gray-300 hover:bg-gray-700'
+                                    : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                 title="다크 모드 토글"
                             >
@@ -464,8 +464,8 @@ export default function AdminPage() {
                             <button
                                 onClick={goToHome}
                                 className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${isDarkMode
-                                        ? 'text-gray-300 hover:bg-gray-700'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'text-gray-300 hover:bg-gray-700'
+                                    : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                             >
                                 홈으로
@@ -683,7 +683,7 @@ export default function AdminPage() {
                                                 </div>
                                             );
                                         })}
-                                        
+
                                         {siteStats.length > 6 && (
                                             <button
                                                 type="button"
@@ -691,7 +691,7 @@ export default function AdminPage() {
                                                 className={`w-full py-3 px-4 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${isDarkMode
                                                     ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
                                                     : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800'
-                                                }`}
+                                                    }`}
                                             >
                                                 <div className="flex items-center justify-center space-x-2">
                                                     {showAllSites ? (
@@ -737,7 +737,7 @@ export default function AdminPage() {
                                         ) : recentPostsByCrawl.length > 0 ? (
                                             (() => {
                                                 const firstPost = recentPostsByCrawl[0];
-                                                const regDate = firstPost.regDate ? new Date(firstPost.regDate) : null;
+                                                const regDate = firstPost.reg_date ? new Date(firstPost.reg_date) : null;
                                                 if (!regDate) return '정보 없음';
 
                                                 const now = new Date();
@@ -782,7 +782,7 @@ export default function AdminPage() {
                                         </div>
                                     ) : recentPostsByCrawl.length > 0 ? (
                                         recentPostsByCrawl.map((post) => {
-                                            const regDate = post.regDate ? new Date(post.regDate) : null;
+                                            const regDate = post.reg_date ? new Date(post.reg_date) : null;
                                             const formattedRegDate = regDate ?
                                                 `${regDate.getFullYear()}-${(regDate.getMonth() + 1).toString().padStart(2, '0')}-${regDate.getDate().toString().padStart(2, '0')} ${regDate.getHours().toString().padStart(2, '0')}:${regDate.getMinutes().toString().padStart(2, '0')}` :
                                                 '정보 없음';
@@ -846,7 +846,7 @@ export default function AdminPage() {
                                                 `${contentDate.getFullYear()}-${(contentDate.getMonth() + 1).toString().padStart(2, '0')}-${contentDate.getDate().toString().padStart(2, '0')} ${contentDate.getHours().toString().padStart(2, '0')}:${contentDate.getMinutes().toString().padStart(2, '0')}` :
                                                 '정보 없음';
 
-                                            const regDate = post.regDate ? new Date(post.regDate) : null;
+                                            const regDate = post.reg_date ? new Date(post.reg_date) : null;
                                             const formattedRegDate = regDate ?
                                                 `${regDate.getFullYear()}-${(regDate.getMonth() + 1).toString().padStart(2, '0')}-${regDate.getDate().toString().padStart(2, '0')} ${regDate.getHours().toString().padStart(2, '0')}:${regDate.getMinutes().toString().padStart(2, '0')}` :
                                                 '정보 없음';
