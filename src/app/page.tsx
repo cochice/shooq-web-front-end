@@ -130,6 +130,15 @@ export default function Home() {
     // 뉴스 토글 모드 (기본값: false - 뉴스 숨김)
     const [showNews, setShowNews] = useState(false);
 
+    // 설정 로드 완료 상태
+    const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+    // 설정 복원 진행 중 상태 (중복 API 호출 방지)
+    const [isRestoringSettings, setIsRestoringSettings] = useState(true);
+
+    // 초기 로드 완료 상태 (사용자의 필터 변경과 구분)
+    const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
+
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
         const textarea = document.createElement('textarea');
@@ -240,6 +249,7 @@ export default function Home() {
             'MlbPark': 'rgb(65, 106, 220)',
             'BobaeDream': 'rgb(16, 90, 174)',
             'Inven': 'rgb(240, 255, 255)',
+            'Damoang': 'rgb(138, 43, 226)',   // Purple
         } as const;
         return siteColors[site as keyof typeof siteColors] || 'rgb(107, 114, 128)'; // Default gray
     };
@@ -262,6 +272,7 @@ export default function Home() {
             'MlbPark': { letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
             'BobaeDream': { letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
             'Inven': { letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
+            'Damoang': { letter: 'D', bgColor: 'rgb(138, 43, 226)', textColor: 'white' },
         } as const;
 
         return logoData[site as keyof typeof logoData] || { letter: '?', bgColor: 'rgb(107, 114, 128)', textColor: 'white' };
@@ -279,7 +290,7 @@ export default function Home() {
     };
 
     // 초기 데이터 로드
-    const loadInitialData = useCallback(async (filterSites?: string[], searchQuery?: string) => {
+    const loadInitialData = useCallback(async (filterSites?: string[], searchQuery?: string, isInitialLoad = false) => {
         try {
             setLoading(true);
             setShowTopLoadingBar(true);
@@ -292,8 +303,8 @@ export default function Home() {
                 if (selectedSites.size > 0) {
                     sitesArray = Array.from(selectedSites);
                 } else {
-                    // 선택된 사이트가 없으면 빈 배열 (아무것도 조회하지 않음)
-                    sitesArray = [];
+                    // 선택된 사이트가 없으면 undefined로 설정하여 모든 사이트 조회
+                    sitesArray = undefined;
                 }
             }
             
@@ -304,8 +315,11 @@ export default function Home() {
             // API 호출 파라미터 로깅
             console.log("=== API Call Parameters ===");
             console.log("sitesArray:", sitesArray);
+            console.log("sitesArray type:", typeof sitesArray);
+            console.log("sitesArray length:", sitesArray?.length);
             console.log("issueTimeValue:", issueTimeValue);
             console.log("searchQuery:", searchQuery);
+            console.log("selectedSites:", Array.from(selectedSites));
             console.log("selectedSites size:", selectedSites.size);
             console.log("showNews:", showNews);
             console.log("===========================");
@@ -329,7 +343,19 @@ export default function Home() {
             setTotalCount(postsResult.totalCount);
             setHasMore(postsResult.hasNextPage);
             setSites(sitesResult);
-            console.log('Loaded sites:', sitesResult, 'Filter:', sitesArray);
+            console.log('=== API Response ===');
+            console.log('Posts count:', postsResult.data.length);
+            console.log('Total count:', postsResult.totalCount);
+            console.log('Posts sites:', [...new Set(postsResult.data.map(p => p.site))]);
+            console.log('Loaded sites:', sitesResult);
+            console.log('Applied filter:', sitesArray);
+            console.log('==================');
+
+            // 초기 로드 완료 표시
+            if (isInitialLoad && !initialLoadCompleted) {
+                setInitialLoadCompleted(true);
+                console.log('=== Initial Load Completed ===');
+            }
         } catch (error) {
             console.error('데이터 로드 실패:', error);
             setError('데이터를 불러오는데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
@@ -337,7 +363,7 @@ export default function Home() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [selectedSites, issueType, showNews]);
+    }, [selectedSites, issueType, showNews, initialLoadCompleted]);
 
 
     // 더 많은 포스트 로드
@@ -357,8 +383,8 @@ export default function Home() {
             if (selectedSites.size > 0) {
                 sitesArray = Array.from(selectedSites);
             } else {
-                // 선택된 사이트가 없으면 빈 배열 (아무것도 조회하지 않음)
-                sitesArray = [];
+                // 선택된 사이트가 없으면 undefined로 설정하여 모든 사이트 조회
+                sitesArray = undefined;
             }
             
             // 뉴스 필터링은 백엔드에서 isNewsYn 파라미터로 처리됨
@@ -450,12 +476,6 @@ export default function Home() {
         }
     }, []);
 
-    // 이슈 시간 변경 시 데이터 리로드
-    useEffect(() => {
-        setPosts([]);
-        setCurrentPage(1);
-        loadInitialData();
-    }, [issueType]);
 
     // 스크롤 이벤트 핸들러
     useEffect(() => {
@@ -518,10 +538,7 @@ export default function Home() {
     const toggleShowNews = () => {
         const newShowNews = !showNews;
         setShowNews(newShowNews);
-        // 토글 변경 시 데이터 리로드
-        setPosts([]);
-        setCurrentPage(1);
-        loadInitialData();
+        // 상태 변경만 하고, useEffect에서 데이터 리로드 처리
     };
 
     // 이슈 시간 변경
@@ -553,93 +570,155 @@ export default function Home() {
         StorageUtils.setStringSet(STORAGE_KEYS.SELECTED_SITES, emptySet);
     };
 
-    // 컴포넌트 마운트 시 초기 데이터 로드
+    // 컴포넌트 마운트 시 초기 데이터 로드 - 설정 복원 이후에 실행
     useEffect(() => {
-        loadInitialData();
-    }, []); // 마운트 시 한 번만 실행
-
-    // 필터 및 검색 상태 변경 시 데이터 다시 로드
-    useEffect(() => {
-        if (sites.length > 0) { // 사이트 목록이 로드된 후에만 실행
-            setPosts([]);
-            setCurrentPage(1);
-            loadInitialData();
+        if (isSettingsLoaded) {
+            console.log('=== Initial Data Load ===');
+            loadInitialData(undefined, undefined, true); // isInitialLoad = true
         }
-    }, [selectedSites, isSearchMode]);
+    }, [isSettingsLoaded, loadInitialData]); // 설정이 복원된 후에 실행
 
-    // 초기 다크 모드 및 새창 모드 설정
+    // 필터 및 검색 상태 변경 시 데이터 다시 로드 (설정 복원 이후 사용자가 직접 변경한 경우만)
+    const prevDepsRef = useRef<{
+        selectedSites: Set<string>;
+        isSearchMode: boolean;
+        showNews: boolean;
+        issueType: IssueType;
+    }>({
+        selectedSites: new Set(),
+        isSearchMode: false,
+        showNews: false,
+        issueType: ISSUE_TYPES.LATEST
+    });
+
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            // 다크 모드 설정
-            const savedTheme = StorageUtils.getItem(STORAGE_KEYS.THEME);
-            const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        if (sites.length > 0 && isSettingsLoaded && !isRestoringSettings && initialLoadCompleted) {
+            const prev = prevDepsRef.current;
+            const changes = [];
 
-            // 저장된 테마가 있으면 그것을 사용, 없으면 시스템 설정을 따름
-            const shouldUseDarkMode = savedTheme ? savedTheme === 'dark' : prefersDark;
-
-            setIsDarkMode(shouldUseDarkMode);
-            if (shouldUseDarkMode) {
-                document.documentElement.classList.add('dark');
-            } else {
-                document.documentElement.classList.remove('dark');
+            if (prev.selectedSites.size !== selectedSites.size ||
+                Array.from(prev.selectedSites).sort().join(',') !== Array.from(selectedSites).sort().join(',')) {
+                changes.push(`selectedSites: ${Array.from(prev.selectedSites)} → ${Array.from(selectedSites)}`);
+            }
+            if (prev.isSearchMode !== isSearchMode) {
+                changes.push(`isSearchMode: ${prev.isSearchMode} → ${isSearchMode}`);
+            }
+            if (prev.showNews !== showNews) {
+                changes.push(`showNews: ${prev.showNews} → ${showNews}`);
+            }
+            if (prev.issueType !== issueType) {
+                changes.push(`issueType: ${prev.issueType} → ${issueType}`);
             }
 
-            // 새창 모드 설정 (기본값: false - 현재창)
-            const savedNewWindowMode = StorageUtils.getBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, false);
-            setIsNewWindowMode(savedNewWindowMode);
-
-            // 필터 설정 복원
-            const savedSelectedSites = StorageUtils.getStringSet(STORAGE_KEYS.SELECTED_SITES);
-            setSelectedSites(savedSelectedSites);
-
-            // 검색 키워드 복원
-            const savedSearchKeyword = StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
-            if (savedSearchKeyword) {
-                setSearchKeyword(savedSearchKeyword);
-                searchKeywordRef.current = savedSearchKeyword;
-                setIsSearchMode(true);
+            if (changes.length > 0) {
+                console.log('=== Filter Changed - Reloading Data ===');
+                console.log('Changes:', changes);
+                setPosts([]);
+                setCurrentPage(1);
+                loadInitialData();
             }
 
-            // 이슈 시간 상태 복원
-            const savedIssueType = StorageUtils.getItem(STORAGE_KEYS.SORT_TYPE, ISSUE_TYPES.LATEST);
-            if (Object.values(ISSUE_TYPES).includes(savedIssueType as IssueType)) {
-                setIssueType(savedIssueType as IssueType);
-            }
+            // 현재 값 저장
+            prevDepsRef.current = {
+                selectedSites: new Set(selectedSites),
+                isSearchMode,
+                showNews,
+                issueType
+            };
+        }
+    }, [selectedSites, isSearchMode, showNews, issueType, sites.length, isSettingsLoaded, isRestoringSettings, initialLoadCompleted, loadInitialData]);
 
-            // 읽은 글 목록 복원
-            const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
-            if (savedReadPosts) {
-                try {
-                    const readPostsArray = JSON.parse(savedReadPosts);
-                    if (Array.isArray(readPostsArray)) {
-                        setReadPosts(new Set(readPostsArray));
-                    }
-                } catch (error) {
-                    console.warn('Failed to parse read posts from localStorage:', error);
+    // 설정 복원 함수
+    const restoreSettings = useCallback(() => {
+        if (typeof window === 'undefined') return;
+
+        console.log('=== Settings Restoration Started ===');
+
+        // 다크 모드 설정
+        const savedTheme = StorageUtils.getItem(STORAGE_KEYS.THEME);
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const shouldUseDarkMode = savedTheme ? savedTheme === 'dark' : prefersDark;
+
+        // 새창 모드 설정
+        const savedNewWindowMode = StorageUtils.getBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, false);
+
+        // 필터 설정 복원
+        const savedSelectedSites = StorageUtils.getStringSet(STORAGE_KEYS.SELECTED_SITES);
+
+        // 검색 키워드 복원
+        const savedSearchKeyword = StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
+
+        // 이슈 시간 상태 복원
+        const savedIssueType = StorageUtils.getItem(STORAGE_KEYS.SORT_TYPE, ISSUE_TYPES.LATEST);
+
+        // 읽은 글 목록 복원
+        const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
+
+        // 안 본 글만 보기 설정 복원
+        const savedShowUnreadOnly = StorageUtils.getBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, false);
+
+        // 상태 일괄 업데이트
+        setIsDarkMode(shouldUseDarkMode);
+        if (shouldUseDarkMode) {
+            document.documentElement.classList.add('dark');
+        } else {
+            document.documentElement.classList.remove('dark');
+        }
+
+        setIsNewWindowMode(savedNewWindowMode);
+        setSelectedSites(savedSelectedSites);
+
+        if (savedSearchKeyword) {
+            setSearchKeyword(savedSearchKeyword);
+            searchKeywordRef.current = savedSearchKeyword;
+            setIsSearchMode(true);
+        }
+
+        if (Object.values(ISSUE_TYPES).includes(savedIssueType as IssueType)) {
+            setIssueType(savedIssueType as IssueType);
+        }
+
+        if (savedReadPosts) {
+            try {
+                const readPostsArray = JSON.parse(savedReadPosts);
+                if (Array.isArray(readPostsArray)) {
+                    setReadPosts(new Set(readPostsArray));
                 }
+            } catch (error) {
+                console.warn('Failed to parse read posts from localStorage:', error);
             }
-
-            // 안 본 글만 보기 설정 복원 (기본값: false)
-            const savedShowUnreadOnly = StorageUtils.getBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, false);
-            setShowUnreadOnly(savedShowUnreadOnly);
-
-            console.log('Settings loaded:', {
-                theme: savedTheme || (prefersDark ? 'dark (system)' : 'light (system)'),
-                newWindowMode: savedNewWindowMode,
-                searchKeyword: savedSearchKeyword,
-                selectedSites: Array.from(savedSelectedSites),
-                issueType: savedIssueType,
-                showUnreadOnly: savedShowUnreadOnly
-            });
-
-            // 페이지 접속 로그 기록
-            ApiService.logAccess().then(() => {
-                console.log('Access logged successfully');
-            }).catch((error) => {
-                console.warn('Failed to log access:', error);
-            });
         }
+
+        setShowUnreadOnly(savedShowUnreadOnly);
+
+        console.log('Settings restored:', {
+            theme: savedTheme || (prefersDark ? 'dark (system)' : 'light (system)'),
+            newWindowMode: savedNewWindowMode,
+            searchKeyword: savedSearchKeyword,
+            selectedSites: Array.from(savedSelectedSites),
+            selectedSitesSize: savedSelectedSites.size,
+            issueType: savedIssueType,
+            showUnreadOnly: savedShowUnreadOnly
+        });
+
+        // 페이지 접속 로그 기록
+        ApiService.logAccess().then(() => {
+            console.log('Access logged successfully');
+        }).catch((error) => {
+            console.warn('Failed to log access:', error);
+        });
+
+        console.log('=== Settings Restoration Completed ===');
+
+        // 설정 복원 완료 표시
+        setIsRestoringSettings(false);
+        setIsSettingsLoaded(true);
     }, []);
+
+    // 초기 설정 복원
+    useEffect(() => {
+        restoreSettings();
+    }, [restoreSettings]);
 
     // 드롭다운 외부 클릭 시 닫기
     useEffect(() => {
