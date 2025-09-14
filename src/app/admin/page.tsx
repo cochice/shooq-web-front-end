@@ -43,6 +43,7 @@ export default function AdminPage() {
         totalPosts: 0,
         activeSites: 0,
         totalVisitors: 0,
+        todayVisitors: 0,
         dailyViews: 0,
         systemStatus: '정상'
     });
@@ -530,14 +531,14 @@ export default function AdminPage() {
                     <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>총 방문자</p>
+                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>총 방문자/오늘</p>
                                 {statsLoading ? (
                                     <div className="animate-pulse">
                                         <div className="h-8 bg-gray-600 rounded w-24 mt-2"></div>
                                     </div>
                                 ) : (
                                     <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {stats.totalVisitors.toLocaleString()}
+                                        {stats.totalVisitors.toLocaleString()}/{stats.todayVisitors.toLocaleString()}
                                     </p>
                                 )}
                             </div>

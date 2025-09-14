@@ -31,6 +31,7 @@ export interface AdminStats {
   totalPosts: number;
   activeSites: number;
   totalVisitors: number;
+  todayVisitors: number;
   dailyViews: number;
   systemStatus: string;
 }
