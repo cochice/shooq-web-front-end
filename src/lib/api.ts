@@ -17,6 +17,28 @@ export interface SiteBbsInfo {
   posted_dt?: Date
 }
 
+export interface SiteBbsInfoMain {
+  no: number;
+  number?: number;
+  title?: string;
+  author?: string;
+  date?: string;
+  views?: number;
+  likes?: number;
+  url?: string;
+  site?: string;
+  reg_date?: string;
+  reply_num?: string;
+  content?: string;
+  posted_dt?: Date;
+  time_bucket?: string;
+  score?: number;
+}
+
+export interface MainPagedResult<T> {
+  data: T[];
+}
+
 export interface PagedResult<T> {
   data: T[];
   page: number;
@@ -74,15 +96,30 @@ export class ApiService {
     if (!response.ok) {
       throw new Error(`API call failed: ${response.status} ${response.statusText}`);
     }
-
+ 
     return response.json();
   }
 
+  static async getMainPosts(
+    keyword?: string,
+    author?: string,
+    isNewsYn: 'y' | 'n' = 'n'
+  ): Promise<MainPagedResult<SiteBbsInfoMain>> {
+    const params = new URLSearchParams({
+      isNewsYn: isNewsYn
+    });
+
+    if (keyword) params.append('keyword', keyword);
+    if (author) params.append('author', author);
+
+    return this.fetchApi<MainPagedResult<SiteBbsInfoMain>>(`/posts-main?${params.toString()}`);
+  }
+
   static async getPosts(
-    page: number = 1, 
-    pageSize: number = 10, 
-    site?: string, 
-    sites?: string[], 
+    page: number = 1,
+    pageSize: number = 10,
+    site?: string,
+    sites?: string[],
     sortBy: string = '',
     keyword?: string,
     author?: string,
