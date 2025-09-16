@@ -37,7 +37,7 @@ const Header: React.FC<HeaderProps> = ({
     onToggleUnreadOnly,
     isNewWindowMode = false,
     onToggleNewWindowMode,
-    onHomeClick,
+    onHomeClick, // eslint-disable-line @typescript-eslint/no-unused-vars
     showDarkModeToggle = true
 }) => {
 

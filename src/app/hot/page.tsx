@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
@@ -71,7 +71,7 @@ const StorageUtils = {
     }
 };
 
-export default function Home() {
+function HomeContent() {
     const searchParams = useSearchParams();
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
 
@@ -104,7 +104,7 @@ export default function Home() {
     const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
     // 뉴스 토글 모드 (기본값: false - 뉴스 숨김)
-    const [showNews, setShowNews] = useState(false);
+    const [showNews] = useState(false);
 
     // 설정 로드 완료 상태
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
@@ -122,7 +122,8 @@ export default function Home() {
         return textarea.value;
     };
 
-    // 아이콘 렌더링 함수
+    // 아이콘 렌더링 함수 (사용되지 않아 주석 처리)
+    /*
     const renderIssueIcon = (iconType: string) => {
         switch (iconType) {
             case 'clock':
@@ -166,6 +167,7 @@ export default function Home() {
                 );
         }
     };
+    */
 
     // 읽은 글 관리 함수들
     const markPostAsRead = useCallback((postId: string) => {
@@ -207,7 +209,8 @@ export default function Home() {
         }
     };
 
-    // 사이트별 색상 가져오기
+    // 사이트별 색상 가져오기 (사용되지 않아 주석 처리)
+    /*
     const getSiteColor = (site?: string) => {
         const siteColors = {
             'FMKorea': 'rgb(62, 97, 197)',    // Blue
@@ -229,6 +232,7 @@ export default function Home() {
         } as const;
         return siteColors[site as keyof typeof siteColors] || 'rgb(107, 114, 128)'; // Default gray
     };
+    */
 
     // 사이트별 로고 문자 및 색상 가져오기
     const getSiteLogo = (site?: string) => {
@@ -429,12 +433,14 @@ export default function Home() {
         StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
-    // 뉴스 토글
+    // 뉴스 토글 (사용되지 않아 주석 처리)
+    /*
     const toggleShowNews = () => {
         const newShowNews = !showNews;
         setShowNews(newShowNews);
         // 상태 변경만 하고, useEffect에서 데이터 리로드 처리
     };
+    */
 
 
     // 컴포넌트 마운트 시 초기 데이터 로드 - 설정 복원 이후에 실행
@@ -824,5 +830,19 @@ export default function Home() {
             </div>
 
         </div>
+    );
+}
+
+export default function Home() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white dark:bg-gray-900">
+                <div className="flex justify-center items-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+            </div>
+        }>
+            <HomeContent />
+        </Suspense>
     );
 }
