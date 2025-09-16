@@ -93,34 +93,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {/* 스크롤 가능한 사이트 목록 */}
                             <div className="flex-1 overflow-y-auto">
                                 <div className="space-y-6 pr-2">
-                                    {/* 뉴스 섹션 */}
-                                    <div>
-                                        <div className="flex items-center justify-between mb-3">
-                                            <h3 className="font-semibold text-gray-300">뉴스 ({HARDCODED_SITES.news.length}개)</h3>
-                                        </div>
-                                        <div className="space-y-2">
-                                            {HARDCODED_SITES.news.map((site) => (
-                                                <Link
-                                                    key={site.code}
-                                                    href={`/hot?site=${site.code}`}
-                                                    className="flex items-center space-x-3 w-full px-2 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                                    onClick={() => onCloseSidebar?.()}
-                                                >
-                                                    <div
-                                                        className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                                                        style={{
-                                                            backgroundColor: site.bgColor,
-                                                            color: site.textColor
-                                                        }}
-                                                    >
-                                                        {site.letter}
-                                                    </div>
-                                                    <span className="text-sm font-medium">{site.name}</span>
-                                                </Link>
-                                            ))}
-                                        </div>
-                                    </div>
-
                                     {/* 커뮤니티 섹션 */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
@@ -203,34 +175,6 @@ const Sidebar: React.FC<SidebarProps> = ({
                         } as React.CSSProperties}
                     >
                         <div className="space-y-6 pr-2">
-                            {/* 뉴스 섹션 */}
-                            <div>
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">뉴스 ({HARDCODED_SITES.news.length}개)</h3>
-                                </div>
-                                <div className="space-y-2">
-                                    {HARDCODED_SITES.news.map((site) => (
-                                        <Link
-                                            key={site.code}
-                                            href={`/hot?site=${site.code}`}
-                                            className="flex items-center space-x-3 w-full px-2 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                            onClick={() => onCloseSidebar?.()}
-                                        >
-                                            <div
-                                                className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
-                                                style={{
-                                                    backgroundColor: site.bgColor,
-                                                    color: site.textColor
-                                                }}
-                                            >
-                                                {site.letter}
-                                            </div>
-                                            <span className="text-sm font-medium">{site.name}</span>
-                                        </Link>
-                                    ))}
-                                </div>
-                            </div>
-
                             {/* 커뮤니티 섹션 */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
