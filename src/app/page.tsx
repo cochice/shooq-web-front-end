@@ -381,12 +381,16 @@ export default function Home() {
     const SectionHeader = ({ title, linkTo }: { title: string; linkTo: string }) => (
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
+            
+            {linkTo && (
             <Link
                 href={linkTo}
                 className="text-sm text-orange-500 hover:text-orange-600 font-medium"
             >
                 더보기 →
             </Link>
+            )}
+
         </div>
     );
 
@@ -469,7 +473,7 @@ export default function Home() {
                     <div className="space-y-8">
                         {/* 1시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="1시간 내" linkTo="/hot" />
+                            <SectionHeader title="커뮤니티별 인기순 (3시간 이내)" linkTo="/hot" />
                             <div className="space-y-4">
                                 {loading.latest ? (
                                     <div className="flex justify-center items-center py-8">
@@ -485,7 +489,7 @@ export default function Home() {
 
                         {/* 3시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="3시간 내" linkTo="/hot" />
+                            <SectionHeader title="6시간 이내" linkTo="" />
                             <div className="space-y-4">
                                 {loading.threeHours ? (
                                     <div className="flex justify-center items-center py-8">
@@ -501,7 +505,7 @@ export default function Home() {
 
                         {/* 9시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="9시간 내" linkTo="/hot" />
+                            <SectionHeader title="9시간 이내" linkTo="" />
                             <div className="space-y-4">
                                 {loading.nineHours ? (
                                     <div className="flex justify-center items-center py-8">
@@ -517,7 +521,7 @@ export default function Home() {
 
                         {/* 24시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="24시간 내" linkTo="/hot" />
+                            <SectionHeader title="24시간 이내" linkTo="" />
                             <div className="space-y-4">
                                 {loading.oneDay ? (
                                     <div className="flex justify-center items-center py-8">
