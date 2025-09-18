@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
     title: {
-        default: "Shooq – 라이브 이슈",
+        default: "Shooq – 라이브 이슈 | 커뮤니티 인기글",
         template: "%s | Shooq"
     },
     description: "커뮤니티 인기글 모음 사이트 슉(Shooq) - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼. 에펨코리아, 유머대학, 더쿠 등 주요 커뮤니티의 HOT 게시물을 실시간으로 확인하세요.",
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
         type: 'website',
         locale: 'ko_KR',
         url: '/',
-        title: 'Shooq – 라이브 이슈',
+        title: 'Shooq – 라이브 이슈 | 커뮤니티 인기글',
         description: '커뮤니티 인기글 모음 사이트 - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼',
         siteName: 'Shooq',
         images: [
@@ -53,7 +53,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: 'summary_large_image',
-        title: 'Shooq – 라이브 이슈',
+        title: 'Shooq – 라이브 이슈 | 커뮤니티 인기글',
         description: '커뮤니티 인기글 모음 사이트 - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼',
         creator: '@shooq_official',
         images: [`${process.env.NEXT_PUBLIC_SITE_URL || 'https://shooq.live'}/shooq.png`],
