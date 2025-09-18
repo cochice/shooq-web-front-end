@@ -86,6 +86,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="font-medium">핫이슈</span>
                                 </Link>
 
+                                {/* 최신 뉴스 버튼 */}
+                                <Link
+                                    href="/news"
+                                    className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
+                                    onClick={() => onCloseSidebar?.()}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                                    </svg>
+                                    <span className="font-medium">최신 뉴스</span>
+                                </Link>
+
                                 {/* 구분선 */}
                                 <div className="border-t border-gray-700 my-4"></div>
                             </div>
@@ -158,6 +170,18 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span className="font-medium">핫이슈</span>
+                        </Link>
+
+                        {/* 최신 뉴스 버튼 */}
+                        <Link
+                            href="/news"
+                            className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            onClick={() => onCloseSidebar?.()}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
+                            </svg>
+                            <span className="font-medium">최신 뉴스</span>
                         </Link>
 
                         {/* 구분선 */}

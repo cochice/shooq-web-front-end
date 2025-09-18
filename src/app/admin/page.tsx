@@ -41,7 +41,11 @@ export default function AdminPage() {
     // 대시보드 통계 데이터
     const [stats, setStats] = useState<AdminStats>({
         totalPosts: 0,
+        communityPosts: 0,
+        newsPosts: 0,
         activeSites: 0,
+        communitySites: 0,
+        newsSites: 0,
         totalVisitors: 0,
         todayVisitors: 0,
         dailyViews: 0,
@@ -69,6 +73,10 @@ export default function AdminPage() {
     const [dailySiteStats, setDailySiteStats] = useState<DailySiteStats[]>([]);
     const [dailySiteStatsLoading, setDailySiteStatsLoading] = useState(true);
 
+    // 최신 크롤링 시간 데이터
+    const [latestCrawlTime, setLatestCrawlTime] = useState<string | null>(null);
+    const [latestCrawlTimeLoading, setLatestCrawlTimeLoading] = useState(true);
+
     // 사이트 관리 펼치기/접기 상태
     const [showAllSites, setShowAllSites] = useState(false);
 
@@ -81,6 +89,7 @@ export default function AdminPage() {
             setRecentPostsByContentLoading(true);
             setWeeklyCrawlStatsLoading(true);
             setDailySiteStatsLoading(true);
+            setLatestCrawlTimeLoading(true);
 
             // 관리자 통계 API 호출
             const adminStats = await ApiService.getAdminStats();
@@ -89,6 +98,7 @@ export default function AdminPage() {
             const recentPostsByContentData = await ApiService.getRecentPostsByContentTime(5);
             const weeklyCrawlStatsData = await ApiService.getWeeklyCrawlStats();
             const dailySiteStatsData = await ApiService.getDailySiteStats();
+            const latestCrawlTimeData = await ApiService.getLatestCrawlTime();
 
             setStats(adminStats);
             setSiteStats(siteStatistics);
@@ -96,6 +106,7 @@ export default function AdminPage() {
             setRecentPostsByContent(recentPostsByContentData);
             setWeeklyCrawlStats(weeklyCrawlStatsData);
             setDailySiteStats(dailySiteStatsData);
+            setLatestCrawlTime(latestCrawlTimeData.latestCrawlTime);
         } catch (error) {
             console.error('통계 데이터 로드 실패:', error);
             setStats(prev => ({ ...prev, systemStatus: '오류' }));
@@ -106,6 +117,7 @@ export default function AdminPage() {
             setRecentPostsByContentLoading(false);
             setWeeklyCrawlStatsLoading(false);
             setDailySiteStatsLoading(false);
+            setLatestCrawlTimeLoading(false);
         }
     };
 
@@ -493,9 +505,25 @@ export default function AdminPage() {
                                         <div className="h-8 bg-gray-600 rounded w-20 mt-2"></div>
                                     </div>
                                 ) : (
-                                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {stats.totalPosts.toLocaleString()}
-                                    </p>
+                                    <div className="flex flex-col">
+                                        <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {stats.totalPosts.toLocaleString()}
+                                        </p>
+                                        <div className="flex items-center space-x-3 mt-1">
+                                            <div className="flex items-center space-x-1">
+                                                <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
+                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                    {stats.communityPosts.toLocaleString()}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                                <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
+                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                                                    {stats.newsPosts.toLocaleString()}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                             <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
@@ -515,9 +543,25 @@ export default function AdminPage() {
                                         <div className="h-8 bg-gray-600 rounded w-16 mt-2"></div>
                                     </div>
                                 ) : (
-                                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {stats.activeSites}
-                                    </p>
+                                    <div className="flex flex-col">
+                                        <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            {stats.activeSites}
+                                        </p>
+                                        <div className="flex items-center space-x-3 mt-1">
+                                            <div className="flex items-center space-x-1">
+                                                <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
+                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                    {stats.communitySites}
+                                                </span>
+                                            </div>
+                                            <div className="flex items-center space-x-1">
+                                                <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
+                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                                                    {stats.newsSites}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
                             <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
@@ -531,20 +575,32 @@ export default function AdminPage() {
                     <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>총 방문자/오늘</p>
+                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>방문자</p>
                                 {statsLoading ? (
                                     <div className="animate-pulse">
                                         <div className="h-8 bg-gray-600 rounded w-24 mt-2"></div>
                                     </div>
                                 ) : (
-                                    <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {stats.totalVisitors.toLocaleString()}/{stats.todayVisitors.toLocaleString()}
-                                    </p>
+                                    <div className="flex flex-col">
+                                        <div className="flex items-baseline space-x-2">
+                                            <span className={`text-2xl font-bold text-orange-500`}>
+                                                {stats.todayVisitors.toLocaleString()}
+                                            </span>
+                                            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>오늘</span>
+                                        </div>
+                                        <div className="flex items-center space-x-2 mt-1">
+                                            <span className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                {stats.totalVisitors.toLocaleString()}
+                                            </span>
+                                            <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>총 방문자</span>
+                                        </div>
+                                    </div>
                                 )}
                             </div>
-                            <div className="w-12 h-12 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg flex items-center justify-center">
-                                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z" />
+                            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                 </svg>
                             </div>
                         </div>
@@ -602,10 +658,35 @@ export default function AdminPage() {
                     {/* 오늘 사이트별 통계 (도넛 차트) */}
                     <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
                         <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>오늘 사이트별 현황</h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 크롤링 현황
-                            </p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>오늘 사이트별 현황</h3>
+                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                        {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 크롤링 현황
+                                    </p>
+                                </div>
+                                <div className="text-right">
+                                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>마지막 크롤링 시간</p>
+                                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                        {latestCrawlTimeLoading ? (
+                                            <span className="animate-pulse">로딩중...</span>
+                                        ) : latestCrawlTime ? (
+                                            (() => {
+                                                const crawlDate = new Date(latestCrawlTime);
+                                                const year = crawlDate.getFullYear();
+                                                const month = String(crawlDate.getMonth() + 1).padStart(2, '0');
+                                                const day = String(crawlDate.getDate()).padStart(2, '0');
+                                                const hour = String(crawlDate.getHours()).padStart(2, '0');
+                                                const minute = String(crawlDate.getMinutes()).padStart(2, '0');
+                                                const second = String(crawlDate.getSeconds()).padStart(2, '0');
+                                                return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                            })()
+                                        ) : (
+                                            '데이터 없음'
+                                        )}
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                         <div className="p-6">
                             {dailySiteStatsLoading ? (
@@ -738,7 +819,7 @@ export default function AdminPage() {
                                         ) : recentPostsByCrawl.length > 0 ? (
                                             (() => {
                                                 const firstPost = recentPostsByCrawl[0];
-                                                const regDate = firstPost.reg_date ? new Date(firstPost.reg_date) : null;
+                                                const regDate = firstPost.regDate ? new Date(firstPost.regDate) : null;
                                                 if (!regDate) return '정보 없음';
 
                                                 const now = new Date();
@@ -783,10 +864,26 @@ export default function AdminPage() {
                                         </div>
                                     ) : recentPostsByCrawl.length > 0 ? (
                                         recentPostsByCrawl.map((post) => {
-                                            const regDate = post.reg_date ? new Date(post.reg_date) : null;
-                                            const formattedRegDate = regDate ?
-                                                `${regDate.getFullYear()}-${(regDate.getMonth() + 1).toString().padStart(2, '0')}-${regDate.getDate().toString().padStart(2, '0')} ${regDate.getHours().toString().padStart(2, '0')}:${regDate.getMinutes().toString().padStart(2, '0')}` :
-                                                '정보 없음';
+                                            let regDate = null;
+                                            let formattedRegDate = '정보 없음';
+
+                                            if (post.regDate) {
+                                                try {
+                                                    regDate = new Date(post.regDate);
+                                                    // Check if the date is valid
+                                                    if (!isNaN(regDate.getTime())) {
+                                                        const year = regDate.getFullYear();
+                                                        const month = String(regDate.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(regDate.getDate()).padStart(2, '0');
+                                                        const hour = String(regDate.getHours()).padStart(2, '0');
+                                                        const minute = String(regDate.getMinutes()).padStart(2, '0');
+                                                        const second = String(regDate.getSeconds()).padStart(2, '0');
+                                                        formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                    }
+                                                } catch (error) {
+                                                    console.warn('Failed to parse regDate:', post.regDate, error);
+                                                }
+                                            }
 
                                             return (
                                                 <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
@@ -842,15 +939,48 @@ export default function AdminPage() {
                                         </div>
                                     ) : recentPostsByContent.length > 0 ? (
                                         recentPostsByContent.map((post) => {
-                                            const contentDate = post.date ? new Date(post.date) : null;
-                                            const formattedContentDate = contentDate ?
-                                                `${contentDate.getFullYear()}-${(contentDate.getMonth() + 1).toString().padStart(2, '0')}-${contentDate.getDate().toString().padStart(2, '0')} ${contentDate.getHours().toString().padStart(2, '0')}:${contentDate.getMinutes().toString().padStart(2, '0')}` :
-                                                '정보 없음';
+                                            // Handle content date (string field)
+                                            let formattedContentDate = '정보 없음';
+                                            if (post.date) {
+                                                try {
+                                                    const contentDate = new Date(post.date);
+                                                    if (!isNaN(contentDate.getTime())) {
+                                                        const year = contentDate.getFullYear();
+                                                        const month = String(contentDate.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(contentDate.getDate()).padStart(2, '0');
+                                                        const hour = String(contentDate.getHours()).padStart(2, '0');
+                                                        const minute = String(contentDate.getMinutes()).padStart(2, '0');
+                                                        const second = String(contentDate.getSeconds()).padStart(2, '0');
+                                                        formattedContentDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                    } else {
+                                                        // If parsing fails, show the raw date string
+                                                        formattedContentDate = post.date;
+                                                    }
+                                                } catch (error) {
+                                                    console.warn('Failed to parse content date:', post.date, error);
+                                                    // If parsing fails, show the raw date string
+                                                    formattedContentDate = post.date;
+                                                }
+                                            }
 
-                                            const regDate = post.reg_date ? new Date(post.reg_date) : null;
-                                            const formattedRegDate = regDate ?
-                                                `${regDate.getFullYear()}-${(regDate.getMonth() + 1).toString().padStart(2, '0')}-${regDate.getDate().toString().padStart(2, '0')} ${regDate.getHours().toString().padStart(2, '0')}:${regDate.getMinutes().toString().padStart(2, '0')}` :
-                                                '정보 없음';
+                                            // Handle reg date (datetime field)
+                                            let formattedRegDate = '정보 없음';
+                                            if (post.regDate) {
+                                                try {
+                                                    const regDate = new Date(post.regDate);
+                                                    if (!isNaN(regDate.getTime())) {
+                                                        const year = regDate.getFullYear();
+                                                        const month = String(regDate.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(regDate.getDate()).padStart(2, '0');
+                                                        const hour = String(regDate.getHours()).padStart(2, '0');
+                                                        const minute = String(regDate.getMinutes()).padStart(2, '0');
+                                                        const second = String(regDate.getSeconds()).padStart(2, '0');
+                                                        formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                    }
+                                                } catch (error) {
+                                                    console.warn('Failed to parse regDate:', post.regDate, error);
+                                                }
+                                            }
 
                                             return (
                                                 <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">

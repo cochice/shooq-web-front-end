@@ -51,7 +51,11 @@ export interface PagedResult<T> {
 
 export interface AdminStats {
   totalPosts: number;
+  communityPosts: number;
+  newsPosts: number;
   activeSites: number;
+  communitySites: number;
+  newsSites: number;
   totalVisitors: number;
   todayVisitors: number;
   dailyViews: number;
@@ -69,7 +73,7 @@ export interface RecentPost {
   no: number;
   title: string;
   date: string;
-  reg_date: string;
+  regDate: string;
   site: string;
 }
 
@@ -113,6 +117,23 @@ export class ApiService {
     if (author) params.append('author', author);
 
     return this.fetchApi<MainPagedResult<SiteBbsInfoMain>>(`/posts-main?${params.toString()}`);
+  }
+
+  static async getNews(
+    page: number = 1,
+    pageSize: number = 10,
+    keyword?: string,
+    author?: string
+  ): Promise<MainPagedResult<SiteBbsInfoMain>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString(),
+    });
+
+    if (keyword) params.append('keyword', keyword);
+    if (author) params.append('author', author);
+
+    return this.fetchApi<MainPagedResult<SiteBbsInfoMain>>(`/news?${params.toString()}`);
   }
 
   static async getPosts(
@@ -202,5 +223,10 @@ export class ApiService {
   // 오늘 사이트별 크롤링 통계 조회
   static async getDailySiteStats(): Promise<DailySiteStats[]> {
     return this.fetchApi<DailySiteStats[]>('/admin/daily-site-stats');
+  }
+
+  // 오늘 최신 크롤링 시간 조회
+  static async getLatestCrawlTime(): Promise<{ latestCrawlTime: string | null }> {
+    return this.fetchApi<{ latestCrawlTime: string | null }>('/admin/latest-crawl-time');
   }
 }
