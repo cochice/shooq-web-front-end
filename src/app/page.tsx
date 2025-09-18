@@ -473,7 +473,7 @@ export default function Home() {
                     <div className="space-y-8">
                         {/* 1시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="커뮤니티별 인기순 (3시간 이내)" linkTo="/hot" />
+                            <SectionHeader title="커뮤니티 인기글 (3시간 이내)" linkTo="/hot" />
                             <div className="space-y-4">
                                 {loading.latest ? (
                                     <div className="flex justify-center items-center py-8">
@@ -489,7 +489,7 @@ export default function Home() {
 
                         {/* 3시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="6시간 이내" linkTo="" />
+                            <SectionHeader title="커뮤니티 인기글 (6시간 이내)" linkTo="" />
                             <div className="space-y-4">
                                 {loading.threeHours ? (
                                     <div className="flex justify-center items-center py-8">
@@ -505,7 +505,7 @@ export default function Home() {
 
                         {/* 9시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="9시간 이내" linkTo="" />
+                            <SectionHeader title="커뮤니티 인기글 (9시간 이내)" linkTo="" />
                             <div className="space-y-4">
                                 {loading.nineHours ? (
                                     <div className="flex justify-center items-center py-8">
@@ -521,7 +521,7 @@ export default function Home() {
 
                         {/* 24시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="24시간 이내" linkTo="" />
+                            <SectionHeader title="커뮤니티 인기글 (24시간 이내)" linkTo="" />
                             <div className="space-y-4">
                                 {loading.oneDay ? (
                                     <div className="flex justify-center items-center py-8">
