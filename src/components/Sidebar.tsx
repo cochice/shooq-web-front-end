@@ -7,6 +7,7 @@ interface SidebarProps {
     isSidebarOpen?: boolean;
     onCloseSidebar?: () => void;
     className?: string;
+    onNavigate?: (href: string) => void;
 }
 
 // 하드코딩된 사이트 목록
@@ -22,7 +23,6 @@ const HARDCODED_SITES = {
         { code: 'Ppomppu', name: 'Ppomppu', letter: 'P', bgColor: 'rgb(199, 199, 199)', textColor: 'rgb(75, 85, 99)' },
         { code: 'Clien', name: 'Clien', letter: 'C', bgColor: 'rgb(25, 36, 125)', textColor: 'white' },
         { code: 'TodayHumor', name: 'TodayHumor', letter: 'T', bgColor: 'rgb(255, 255, 255)', textColor: 'rgb(75, 85, 99)' },
-        { code: 'SLRClub', name: 'SLRClub', letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
         { code: 'SlrClub', name: 'SlrClub', letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
         { code: 'Ruliweb', name: 'Ruliweb', letter: 'R', bgColor: 'rgb(255, 102, 0)', textColor: 'white' },
         { code: '82Cook', name: '82Cook', letter: '8', bgColor: 'rgb(230, 230, 230)', textColor: 'rgb(75, 85, 99)' },
@@ -36,7 +36,7 @@ const HARDCODED_SITES = {
 const Sidebar: React.FC<SidebarProps> = ({
     isSidebarOpen,
     onCloseSidebar,
-    className = ""
+    className = "",
 }) => {
     const [isSidebarHovered, setIsSidebarHovered] = React.useState(false);
 
@@ -66,7 +66,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 <Link
                                     href="/"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                    onClick={() => onCloseSidebar?.()}
+                                    onClick={() => window.location.href = '/hot'}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
@@ -152,7 +152,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                         <Link
                             href="/" prefetch={false}
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            onClick={(e) =>{ e.preventDefault(); window.location.href = '/'; onCloseSidebar?.()}}
+                            onClick={(e) => { e.preventDefault(); window.location.href = '/'; onCloseSidebar?.() }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />

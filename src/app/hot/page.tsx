@@ -103,9 +103,6 @@ function HomeContent() {
     // 안 본 글만 보기 모드
     const [showUnreadOnly, setShowUnreadOnly] = useState(false);
 
-    // 뉴스 토글 모드 (기본값: false - 뉴스 숨김)
-    const [showNews] = useState(false);
-
     // 설정 로드 완료 상태
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
 
@@ -115,59 +112,15 @@ function HomeContent() {
     // 초기 로드 완료 상태 (사용자의 필터 변경과 구분)
     const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
 
+    // 로딩 상태를 ref로 관리하여 useCallback 의존성 문제 해결
+    const loadingRef = useRef(false);
+
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         return textarea.value;
     };
-
-    // 아이콘 렌더링 함수 (사용되지 않아 주석 처리)
-    /*
-    const renderIssueIcon = (iconType: string) => {
-        switch (iconType) {
-            case 'clock':
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                );
-            case 'clock-3':
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <text x="12" y="16" textAnchor="middle" fontSize="6" fill="currentColor">3</text>
-                    </svg>
-                );
-            case 'clock-9':
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <text x="12" y="16" textAnchor="middle" fontSize="6" fill="currentColor">9</text>
-                    </svg>
-                );
-            case 'clock-24':
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        <text x="12" y="16" textAnchor="middle" fontSize="5" fill="currentColor">24</text>
-                    </svg>
-                );
-            case 'calendar':
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                );
-            default:
-                return (
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                );
-        }
-    };
-    */
 
     // 읽은 글 관리 함수들
     const markPostAsRead = useCallback((postId: string) => {
@@ -209,31 +162,6 @@ function HomeContent() {
         }
     };
 
-    // 사이트별 색상 가져오기 (사용되지 않아 주석 처리)
-    /*
-    const getSiteColor = (site?: string) => {
-        const siteColors = {
-            'FMKorea': 'rgb(62, 97, 197)',    // Blue
-            'Humoruniv': 'rgb(219, 23, 55)',  // Red
-            'TheQoo': 'rgb(42, 65, 95)',      // Dark Blue
-            'NaverNews': 'rgb(40, 181, 78)',  // Green
-            'Ppomppu': 'rgb(199, 199, 199)',  // Gray
-            'GoogleNews': 'rgb(53, 112, 255)',// Blue
-            'Clien': 'rgb(25, 36, 125)',      // Navy
-            'TodayHumor': 'rgb(255, 255, 255)', // White
-            'SLRClub': 'rgb(66, 116, 175)',   // Blue
-            'SlrClub': 'rgb(66, 116, 175)',   // Blue
-            'Ruliweb': 'rgb(255, 102, 0)',    // Orange
-            '82Cook': 'rgb(230, 230, 230)',
-            'MlbPark': 'rgb(65, 106, 220)',
-            'BobaeDream': 'rgb(16, 90, 174)',
-            'Inven': 'rgb(240, 255, 255)',
-            'Damoang': 'rgb(138, 43, 226)',   // Purple
-        } as const;
-        return siteColors[site as keyof typeof siteColors] || 'rgb(107, 114, 128)'; // Default gray
-    };
-    */
-
     // 사이트별 로고 문자 및 색상 가져오기
     const getSiteLogo = (site?: string) => {
         const logoData = {
@@ -261,7 +189,22 @@ function HomeContent() {
 
     // 초기 데이터 로드
     const loadInitialData = useCallback(async (searchQuery?: string, isInitialLoad = false) => {
+        // 이미 로딩 중인 경우 중복 호출 방지
+        if (loadingRef.current) {
+            console.log('🚫 Already loading, skipping duplicate call', { searchQuery, isInitialLoad });
+            return;
+        }
+
+        console.log('🚀 loadInitialData called', {
+            searchQuery,
+            isInitialLoad,
+            siteParam,
+            timestamp: new Date().toISOString(),
+            stack: new Error().stack?.split('\n')[1]?.trim()
+        });
+
         try {
+            loadingRef.current = true;
             setLoading(true);
             setShowTopLoadingBar(true);
             setError(null);
@@ -269,11 +212,9 @@ function HomeContent() {
             const postsResult = await ApiService.getPosts(
                 1,
                 10,
-                undefined,
-                siteParam ? [siteParam] : undefined, // URL 파라미터의 site 값 사용
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
                 searchQuery,
                 undefined, // author
-                showNews ? 'y' : 'n' // isNewsYn
             );
 
             setPosts(postsResult.data);
@@ -289,10 +230,11 @@ function HomeContent() {
             console.error('데이터 로드 실패:', error);
             setError('데이터를 불러오는데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
         } finally {
+            loadingRef.current = false;
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [showNews, initialLoadCompleted, siteParam]);
+    }, [siteParam]); // initialLoadCompleted 의존성 제거
 
 
     // 더 많은 포스트 로드
@@ -310,11 +252,9 @@ function HomeContent() {
             const result = await ApiService.getPosts(
                 currentPage + 1,
                 10,
-                undefined,
-                siteParam ? [siteParam] : undefined, // URL 파라미터의 site 값 사용
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
                 isSearchMode ? searchKeywordRef.current : undefined,
                 undefined, // author
-                showNews ? 'y' : 'n' // isNewsYn
             );
 
             setPosts(prev => [...prev, ...result.data]);
@@ -327,7 +267,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore, isSearchMode, showNews, siteParam]);
+    }, [currentPage, loading, hasMore, isSearchMode, siteParam]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
     const handleHomeClick = () => {
@@ -374,7 +314,18 @@ function HomeContent() {
         loadInitialData();
     }, [loadInitialData]);
 
-
+    useEffect(() => {
+        // 쿼리 파라미터가 변경될 때마다 실행되지만, 초기 설정이 완료된 후에만 실행
+        if (isSettingsLoaded && !isRestoringSettings) {
+            console.log('🔄 Site param useEffect triggered:', {
+                siteParam,
+                isSettingsLoaded,
+                isRestoringSettings,
+                timestamp: new Date().toISOString()
+            });
+            loadInitialData();
+        }
+    }, [siteParam, isSettingsLoaded, isRestoringSettings, loadInitialData])
 
     // 스크롤 이벤트 핸들러
     useEffect(() => {
@@ -433,36 +384,27 @@ function HomeContent() {
         StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
-    // 뉴스 토글 (사용되지 않아 주석 처리)
-    /*
-    const toggleShowNews = () => {
-        const newShowNews = !showNews;
-        setShowNews(newShowNews);
-        // 상태 변경만 하고, useEffect에서 데이터 리로드 처리
+    // 공통 리프레시 함수 - URL로 강제 이동
+    const refreshPage = (href: string) => {
+        window.location.href = href;
     };
-    */
 
+    // 컴포넌트 마운트 시 데이터 로드
+    const isInitialLoadRef = useRef<boolean>(false);
 
-    // 컴포넌트 마운트 시 초기 데이터 로드 - 설정 복원 이후에 실행
     useEffect(() => {
-        if (isSettingsLoaded) {
+        if (isSettingsLoaded && !isRestoringSettings && !isInitialLoadRef.current) {
+            console.log('🎯 Initial load useEffect triggered:', {
+                isSettingsLoaded,
+                isRestoringSettings,
+                isInitialLoadRef: isInitialLoadRef.current,
+                timestamp: new Date().toISOString()
+            });
+            // siteParam이 변경된 경우가 아닐 때만 초기 로드 실행
             loadInitialData(undefined, true); // isInitialLoad = true
+            isInitialLoadRef.current = true;
         }
-    }, [isSettingsLoaded, loadInitialData]); // 설정이 복원된 후에 실행
-
-    // showNews 변경 시 데이터 다시 로드
-    const prevShowNewsRef = useRef<boolean>(false);
-
-    useEffect(() => {
-        if (isSettingsLoaded && !isRestoringSettings && initialLoadCompleted) {
-            if (prevShowNewsRef.current !== showNews) {
-                setPosts([]);
-                setCurrentPage(1);
-                loadInitialData();
-                prevShowNewsRef.current = showNews;
-            }
-        }
-    }, [showNews, isSettingsLoaded, isRestoringSettings, initialLoadCompleted, loadInitialData]);
+    }, [isSettingsLoaded, isRestoringSettings, loadInitialData]);
 
     // 설정 복원 함수
     const restoreSettings = useCallback(() => {
@@ -608,14 +550,34 @@ function HomeContent() {
             <Sidebar
                 isSidebarOpen={isSidebarOpen}
                 onCloseSidebar={() => setIsSidebarOpen(false)}
+                onNavigate={refreshPage}
             />
 
             <div className="flex flex-col lg:flex-row">
                 {/* Desktop Sidebar */}
-                <Sidebar />
+                <Sidebar onNavigate={refreshPage} />
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">
+                    {/* Page Title */}
+                    <div className="mb-6">
+                        <h1
+                            className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer"
+                            onClick={() => {
+                                // 상태 초기화 후 데이터 다시 로드
+                                setPosts([]);
+                                setCurrentPage(1);
+                                setHasMore(true);
+                                setError(null);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                loadInitialData(undefined, true);
+                            }}
+                        >
+                            커뮤니티 인기글 (핫이슈){siteParam ? ` - ${siteParam}` : ''}
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">인기 커뮤니티의 최신 이슈를 확인하세요</p>
+                    </div>
+
                     {/* Error Message */}
                     {error && (
                         <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-4">

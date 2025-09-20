@@ -56,7 +56,7 @@ const Header: React.FC<HeaderProps> = ({
                         <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                             <span className="text-white font-bold text-xl">S</span>
                         </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">shooq</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">Shooq</span>
                     </Link>
                 </div>
 
@@ -91,7 +91,7 @@ const Header: React.FC<HeaderProps> = ({
                                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
                                     <span className="text-white font-bold text-xl">S</span>
                                 </div>
-                                <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">shooq</span>
+                                <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">Shooq</span>
                             </Link>
                         </div>
 
@@ -108,7 +108,7 @@ const Header: React.FC<HeaderProps> = ({
                                                 onSearch(e.currentTarget.value);
                                             }
                                         }}
-                                        placeholder="shooq 검색"
+                                        placeholder="Shooq 검색"
                                         className="w-full px-4 py-2 pr-8 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
                                     />
                                     {isSearchMode && onClearSearch && (
