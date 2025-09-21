@@ -348,6 +348,13 @@ function NewsContent() {
         StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
+    // 사이드바 네비게이션 함수 (검색 상태 초기화 포함)
+    const refreshPage = (href: string) => {
+        // 사이드바 네비게이션 시 검색 상태 초기화
+        StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
+        window.location.href = href;
+    };
+
     // 컴포넌트 마운트 시 초기 데이터 로드 - 설정 복원 이후에 실행
     useEffect(() => {
         if (isSettingsLoaded) {
@@ -499,11 +506,12 @@ function NewsContent() {
             <Sidebar
                 isSidebarOpen={isSidebarOpen}
                 onCloseSidebar={() => setIsSidebarOpen(false)}
+                onNavigate={refreshPage}
             />
 
             <div className="flex flex-col lg:flex-row">
                 {/* Desktop Sidebar */}
-                <Sidebar />
+                <Sidebar onNavigate={refreshPage} />
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">

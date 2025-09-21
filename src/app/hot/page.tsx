@@ -74,6 +74,7 @@ const StorageUtils = {
 function HomeContent() {
     const searchParams = useSearchParams();
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
+    const keywordParam = searchParams.get('keyword'); // GET 파라미터에서 keyword 값 가져오기
 
     const [posts, setPosts] = useState<SiteBbsInfo[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -316,16 +317,18 @@ function HomeContent() {
 
     useEffect(() => {
         // 쿼리 파라미터가 변경될 때마다 실행되지만, 초기 설정이 완료된 후에만 실행
-        if (isSettingsLoaded && !isRestoringSettings) {
+        // keywordParam이 있을 때는 초기 로드 useEffect에서 처리하므로 여기서는 실행하지 않음
+        if (isSettingsLoaded && !isRestoringSettings && !keywordParam) {
             console.log('🔄 Site param useEffect triggered:', {
                 siteParam,
                 isSettingsLoaded,
                 isRestoringSettings,
+                keywordParam,
                 timestamp: new Date().toISOString()
             });
             loadInitialData();
         }
-    }, [siteParam, isSettingsLoaded, isRestoringSettings, loadInitialData])
+    }, [siteParam, isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam])
 
     // 스크롤 이벤트 핸들러
     useEffect(() => {
@@ -384,8 +387,10 @@ function HomeContent() {
         StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
-    // 공통 리프레시 함수 - URL로 강제 이동
+    // 공통 리프레시 함수 - URL로 강제 이동 (검색 초기화 포함)
     const refreshPage = (href: string) => {
+        // 사이드바 네비게이션 시 검색 상태 초기화
+        StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
         window.location.href = href;
     };
 
@@ -398,13 +403,16 @@ function HomeContent() {
                 isSettingsLoaded,
                 isRestoringSettings,
                 isInitialLoadRef: isInitialLoadRef.current,
+                keywordParam,
                 timestamp: new Date().toISOString()
             });
-            // siteParam이 변경된 경우가 아닐 때만 초기 로드 실행
-            loadInitialData(undefined, true); // isInitialLoad = true
+            // URL 파라미터에서 받은 keyword 우선 사용
+            const searchKeywordToUse = keywordParam || (isSearchMode ? searchKeywordRef.current : undefined);
+            console.log('🔍 Initial load with keyword:', { keywordParam, searchKeywordToUse, isSearchMode });
+            loadInitialData(searchKeywordToUse, true); // isInitialLoad = true
             isInitialLoadRef.current = true;
         }
-    }, [isSettingsLoaded, isRestoringSettings, loadInitialData]);
+    }, [isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam, isSearchMode]);
 
     // 설정 복원 함수
     const restoreSettings = useCallback(() => {
@@ -418,8 +426,9 @@ function HomeContent() {
         // 새창 모드 설정
         const savedNewWindowMode = StorageUtils.getBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, false);
 
-        // 검색 키워드 복원
-        const savedSearchKeyword = StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
+        // 검색 키워드 복원 (URL 파라미터 우선, 그 다음 localStorage)
+        const urlKeyword = keywordParam;
+        const savedSearchKeyword = urlKeyword || StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
 
         // 읽은 글 목록 복원
         const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
@@ -441,6 +450,11 @@ function HomeContent() {
             setSearchKeyword(savedSearchKeyword);
             searchKeywordRef.current = savedSearchKeyword;
             setIsSearchMode(true);
+
+            // URL 파라미터로 받은 키워드는 localStorage에도 저장
+            if (urlKeyword) {
+                StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, urlKeyword);
+            }
         }
 
         if (savedReadPosts) {
@@ -466,7 +480,7 @@ function HomeContent() {
         // 설정 복원 완료 표시
         setIsRestoringSettings(false);
         setIsSettingsLoaded(true);
-    }, []);
+    }, [keywordParam]);
 
     // 초기 설정 복원
     useEffect(() => {

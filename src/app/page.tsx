@@ -209,9 +209,11 @@ export default function Home() {
 
     // 헤더에서 사용할 핸들러들
     const handleSearch = useCallback((keyword: string) => {
-        setSearchKeyword(keyword);
-        setIsSearchMode(!!keyword);
-        // 실제 검색 기능은 필요에 따라 구현
+        const trimmedKeyword = keyword.trim();
+        if (trimmedKeyword) {
+            // hot 페이지로 keyword 파라미터와 함께 이동
+            window.location.href = `/hot?keyword=${encodeURIComponent(trimmedKeyword)}`;
+        }
     }, []);
 
     const handleClearSearch = useCallback(() => {
@@ -223,6 +225,13 @@ export default function Home() {
     const handleHomeClick = () => {
         // 홈으로 이동하거나 페이지 새로고침 로직
         loadAllSectionsData();
+    };
+
+    // 사이드바 네비게이션 함수 (검색 상태 초기화 포함)
+    const refreshPage = (href: string) => {
+        // 사이드바 네비게이션 시 검색 상태 초기화
+        StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
+        window.location.href = href;
     };
 
     // 설정 복원 및 초기 데이터 로드
@@ -449,11 +458,12 @@ export default function Home() {
             <Sidebar
                 isSidebarOpen={isSidebarOpen}
                 onCloseSidebar={() => setIsSidebarOpen(false)}
+                onNavigate={refreshPage}
             />
 
             <div className="flex flex-col lg:flex-row">
                 {/* Desktop Sidebar */}
-                <Sidebar />
+                <Sidebar onNavigate={refreshPage} />
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">

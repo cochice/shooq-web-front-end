@@ -1,7 +1,6 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
 
 interface SidebarProps {
     isSidebarOpen?: boolean;
@@ -9,6 +8,23 @@ interface SidebarProps {
     className?: string;
     onNavigate?: (href: string) => void;
 }
+
+/*
+커뮤니티 순위
+FMKorea, 1
+TheQoo, 2
+Ppomppu, 3
+Ruliweb, 4
+Inven, 5
+MlbPark, 6
+Clien, 7
+BobaeDream, 8
+Humoruniv, 9
+82Cook, 10
+SlrClub, 11
+Damoang, 12
+TodayHumor, 13
+*/
 
 // 하드코딩된 사이트 목록
 const HARDCODED_SITES = {
@@ -37,6 +53,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     isSidebarOpen,
     onCloseSidebar,
     className = "",
+    onNavigate,
 }) => {
     const [isSidebarHovered, setIsSidebarHovered] = React.useState(false);
 
@@ -63,40 +80,64 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {/* 고정된 네비게이션 버튼들 */}
                             <div className="mb-6 space-y-2">
                                 {/* 홈 버튼 */}
-                                <Link
-                                    href="/"
+                                <button
+                                    type="button"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                    onClick={() => window.location.href = '/hot'}
+                                    onClick={() => {
+                                        onNavigate?.('/');
+                                        onCloseSidebar?.();
+                                    }}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                                     </svg>
                                     <span className="font-medium">홈</span>
-                                </Link>
+                                </button>
 
                                 {/* 핫이슈 버튼 */}
-                                <Link
-                                    href="/hot"
+                                <button
+                                    type="button"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                    onClick={() => onCloseSidebar?.()}
+                                    onClick={() => {
+                                        onNavigate?.('/hot');
+                                        onCloseSidebar?.();
+                                    }}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     <span className="font-medium">핫이슈</span>
-                                </Link>
+                                </button>
+
+                                {/* 주간집계 버튼 */}
+                                <button
+                                    type="button"
+                                    className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
+                                    onClick={() => {
+                                        onNavigate?.('/week');
+                                        onCloseSidebar?.();
+                                    }}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                                    </svg>
+                                    <span className="font-medium">주간집계</span>
+                                </button>
 
                                 {/* 최신 뉴스 버튼 */}
-                                <Link
-                                    href="/news"
+                                <button
+                                    type="button"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                    onClick={() => onCloseSidebar?.()}
+                                    onClick={() => {
+                                        onNavigate?.('/news');
+                                        onCloseSidebar?.();
+                                    }}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                                     </svg>
                                     <span className="font-medium">최신 뉴스</span>
-                                </Link>
+                                </button>
 
                                 {/* 구분선 */}
                                 <div className="border-t border-gray-700 my-4"></div>
@@ -112,11 +153,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                         </div>
                                         <div className="space-y-2">
                                             {HARDCODED_SITES.community.map((site) => (
-                                                <Link
+                                                <button
                                                     key={site.code}
-                                                    href={`/hot?site=${site.code}`}
+                                                    type="button"
                                                     className="flex items-center space-x-3 w-full px-2 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
-                                                    onClick={() => onCloseSidebar?.()}
+                                                    onClick={() => {
+                                                        onNavigate?.(`/hot?site=${site.code}`);
+                                                        onCloseSidebar?.();
+                                                    }}
                                                 >
                                                     <div
                                                         className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
@@ -128,7 +172,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                         {site.letter}
                                                     </div>
                                                     <span className="text-sm font-medium">{site.name}</span>
-                                                </Link>
+                                                </button>
                                             ))}
                                         </div>
                                     </div>
@@ -149,40 +193,64 @@ const Sidebar: React.FC<SidebarProps> = ({
                     {/* 고정된 네비게이션 버튼들 */}
                     <div className="mb-6 space-y-2">
                         {/* 홈 버튼 */}
-                        <Link
-                            href="/" prefetch={false}
+                        <button
+                            type="button"
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            onClick={(e) => { e.preventDefault(); window.location.href = '/'; onCloseSidebar?.() }}
+                            onClick={() => {
+                                onNavigate?.('/');
+                                onCloseSidebar?.();
+                            }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
                             </svg>
                             <span className="font-medium">홈</span>
-                        </Link>
+                        </button>
 
                         {/* 핫이슈 버튼 */}
-                        <Link
-                            href="/hot"
+                        <button
+                            type="button"
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            onClick={() => onCloseSidebar?.()}
+                            onClick={() => {
+                                onNavigate?.('/hot');
+                                onCloseSidebar?.();
+                            }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
                             <span className="font-medium">핫이슈</span>
-                        </Link>
+                        </button>
+
+                        {/* 주간집계 버튼 */}
+                        <button
+                            type="button"
+                            className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            onClick={() => {
+                                onNavigate?.('/week');
+                                onCloseSidebar?.();
+                            }}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                            <span className="font-medium">주간집계</span>
+                        </button>
 
                         {/* 최신 뉴스 버튼 */}
-                        <Link
-                            href="/news"
+                        <button
+                            type="button"
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                            onClick={() => onCloseSidebar?.()}
+                            onClick={() => {
+                                onNavigate?.('/news');
+                                onCloseSidebar?.();
+                            }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z" />
                             </svg>
                             <span className="font-medium">최신 뉴스</span>
-                        </Link>
+                        </button>
 
                         {/* 구분선 */}
                         <div className="border-t border-gray-100 dark:border-gray-700 my-4"></div>
@@ -206,11 +274,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                                 </div>
                                 <div className="space-y-2">
                                     {HARDCODED_SITES.community.map((site) => (
-                                        <Link
+                                        <button
                                             key={site.code}
-                                            href={`/hot?site=${site.code}`}
+                                            type="button"
                                             className="flex items-center space-x-3 w-full px-2 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                            onClick={() => onCloseSidebar?.()}
+                                            onClick={() => {
+                                                onNavigate?.(`/hot?site=${site.code}`);
+                                                onCloseSidebar?.();
+                                            }}
                                         >
                                             <div
                                                 className="w-6 h-6 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold"
@@ -222,7 +293,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                 {site.letter}
                                             </div>
                                             <span className="text-sm font-medium">{site.name}</span>
-                                        </Link>
+                                        </button>
                                     ))}
                                 </div>
                             </div>

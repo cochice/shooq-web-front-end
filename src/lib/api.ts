@@ -14,7 +14,8 @@ export interface SiteBbsInfo {
   reg_date?: string;
   reply_num?: string;
   content?: string;
-  posted_dt?: Date
+  posted_dt?: Date;
+  gubun?: string;
 }
 
 export interface SiteBbsInfoMain {
@@ -160,6 +161,19 @@ export class ApiService {
 
   static async getPost(no: number): Promise<SiteBbsInfo> {
     return this.fetchApi<SiteBbsInfo>(`/${no}`);
+  }
+
+ static async getWeek(
+    yyyy?: string,
+    mm?: string,
+    w?: string
+  ): Promise<PagedResult<SiteBbsInfo>> {
+    const params = new URLSearchParams();
+    if (yyyy) params.append('yyyy', yyyy);
+    if (mm) params.append('mm', mm);
+    if (w) params.append('w', w);
+
+    return this.fetchApi<PagedResult<SiteBbsInfo>>(`/week?${params.toString()}`);
   }
 
   static async getSites(): Promise<string[]> {
