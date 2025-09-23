@@ -6,6 +6,7 @@ Allow: /
 # 허용할 주요 페이지들
 Allow: /
 Allow: /hot
+Allow: /week
 Allow: /news
 
 # 차단할 파일들 (필요시)
