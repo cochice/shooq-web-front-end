@@ -606,6 +606,21 @@ function WeekContent() {
                                                         </h2>
                                                     )}
 
+                                                    {post.cloudinary_url && (
+                                                        <div className="mb-3">
+                                                            <img
+                                                                src={post.cloudinary_url}
+                                                                alt="첨부 이미지"
+                                                                className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                                                                loading="lazy"
+                                                                onError={(e) => {
+                                                                    const target = e.target as HTMLImageElement;
+                                                                    target.style.display = 'none';
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    )}
+
                                                     <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
                                                         {post.likes && (
                                                             <div className="flex items-center space-x-1 px-2 py-1">
@@ -717,6 +732,21 @@ function WeekContent() {
                                                                         }`}>
                                                                         {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                                                                     </h2>
+                                                                )}
+
+                                                                {post.cloudinary_url && (
+                                                                    <div className="mb-3">
+                                                                        <img
+                                                                            src={post.cloudinary_url}
+                                                                            alt="첨부 이미지"
+                                                                            className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                                                                            loading="lazy"
+                                                                            onError={(e) => {
+                                                                                const target = e.target as HTMLImageElement;
+                                                                                target.style.display = 'none';
+                                                                            }}
+                                                                        />
+                                                                    </div>
                                                                 )}
 
                                                                 <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
