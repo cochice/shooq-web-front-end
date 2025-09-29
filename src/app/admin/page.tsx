@@ -121,6 +121,21 @@ export default function AdminPage() {
         }
     };
 
+    // 방문자 통계만 새로고침하는 함수
+    const refreshVisitorStats = async () => {
+        try {
+            setStatsLoading(true);
+
+            // 관리자 통계 API 호출 (방문자 데이터 포함)
+            const adminStats = await ApiService.getAdminStats();
+            setStats(adminStats);
+        } catch (error) {
+            console.error('방문자 통계 새로고침 실패:', error);
+        } finally {
+            setStatsLoading(false);
+        }
+    };
+
     // 차트 데이터 생성
     const createChartData = () => {
         // 최근 7일간의 날짜 생성
@@ -495,6 +510,33 @@ export default function AdminPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 py-8">
+                {/* 새로고침 버튼 */}
+                <div className="mb-6">
+                    <div className="flex items-center justify-between">
+                        <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>대시보드 통계</h2>
+                        <button
+                            onClick={refreshVisitorStats}
+                            disabled={statsLoading}
+                            className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
+                                isDarkMode
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:bg-gray-800 disabled:text-gray-600'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 disabled:bg-gray-50 disabled:text-gray-400'
+                            } disabled:cursor-not-allowed`}
+                            title="방문자 통계 새로고침"
+                        >
+                            <svg
+                                className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                            </svg>
+                            <span>새로고침</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
                         <div className="flex items-center justify-between">
