@@ -16,6 +16,11 @@ const STORAGE_KEYS = {
     SHOW_UNREAD_ONLY: 'shooq-showUnreadOnly'
 } as const;
 
+// 성인 콘텐츠 감지 키워드 (추후 확장 가능)
+const ADULT_CONTENT_KEYWORDS = [
+    'ㅇㅎ', 'ㅎㅂ', '19금'
+] as const;
+
 // localStorage 유틸리티 함수
 const StorageUtils = {
     // 안전한 localStorage 읽기
@@ -138,6 +143,12 @@ function HomeContent() {
     const isPostRead = useCallback((postId: string) => {
         return readPosts.has(postId);
     }, [readPosts]);
+
+    // 성인 콘텐츠 감지 함수
+    const hasAdultContent = useCallback((title?: string) => {
+        if (!title) return false;
+        return ADULT_CONTENT_KEYWORDS.some(keyword => title.includes(keyword));
+    }, []);
 
 
     // 날짜 포맷팅 함수
@@ -659,6 +670,7 @@ function HomeContent() {
                         {filteredPosts.map((post, index) => {
                             const postId = `${post.site}-${post.no}`;
                             const isRead = isPostRead(postId);
+                            const isAdultContent = hasAdultContent(post.title);
 
                             return (
                                 <article key={`post-${post.no}-${index}`} className={`rounded-lg border transition-colors ${isRead
@@ -733,6 +745,23 @@ function HomeContent() {
                                                     post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
                                                 )}
                                             </p>
+                                        )}
+
+                                        {post.cloudinary_url && (
+                                            <div className="mb-3">
+                                                <img
+                                                    src={post.cloudinary_url}
+                                                    alt="첨부 이미지"
+                                                    className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${
+                                                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                    }`}
+                                                    loading="lazy"
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                    }}
+                                                />
+                                            </div>
                                         )}
 
                                         <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">

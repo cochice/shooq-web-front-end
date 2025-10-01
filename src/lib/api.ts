@@ -16,6 +16,7 @@ export interface SiteBbsInfo {
   content?: string;
   posted_dt?: Date;
   gubun?: string;
+  cloudinary_url?: string;
 }
 
 export interface SiteBbsInfoMain {
@@ -34,6 +35,7 @@ export interface SiteBbsInfoMain {
   posted_dt?: Date;
   time_bucket?: string;
   score?: number;
+  cloudinary_url?: string;
 }
 
 export interface MainPagedResult<T> {
