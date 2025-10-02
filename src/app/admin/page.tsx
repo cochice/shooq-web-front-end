@@ -80,6 +80,17 @@ export default function AdminPage() {
     // 사이트 관리 펼치기/접기 상태
     const [showAllSites, setShowAllSites] = useState(false);
 
+    // 탭 상태 관리
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'content'>('dashboard');
+
+    // 컨텐츠 제작 탭 - 주간집계 state
+    const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+    const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
+    const [currentWeek, setCurrentWeek] = useState(1);
+    const [weeklyData, setWeeklyData] = useState<any>(null);
+    const [weeklyDataLoading, setWeeklyDataLoading] = useState(false);
+    const [contentText, setContentText] = useState('');
+
     // 대시보드 통계 데이터 로드
     const loadStats = async () => {
         try {
@@ -335,6 +346,14 @@ export default function AdminPage() {
         }
     }, [isLoggedIn]);
 
+    // 컨텐츠 제작 탭 활성화 시 초기 데이터 로드
+    useEffect(() => {
+        if (isLoggedIn && activeTab === 'content' && !weeklyData) {
+            handleWeekChange(currentWeek);
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn, activeTab]);
+
     // 로그인 처리
     const handleLogin = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -378,6 +397,189 @@ export default function AdminPage() {
                 localStorage.setItem('shooq-theme', 'light');
             }
         }
+    };
+
+    // 주차 계산 유틸리티
+    const getWeeksInMonth = (year: number, month: number): number => {
+        const lastDay = new Date(year, month, 0);
+        const daysInMonth = lastDay.getDate();
+        return Math.ceil(daysInMonth / 7);
+    };
+
+    const getCurrentWeek = (year: number, month: number): number => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+        const currentDate = today.getDate();
+
+        if (year !== currentYear || month !== currentMonth) {
+            return 1;
+        }
+
+        return Math.ceil(currentDate / 7);
+    };
+
+    const isFutureWeek = (year: number, month: number, week: number): boolean => {
+        const today = new Date();
+        const currentYear = today.getFullYear();
+        const currentMonth = today.getMonth() + 1;
+
+        if (year > currentYear) return true;
+        if (year < currentYear) return false;
+        if (month > currentMonth) return true;
+        if (month < currentMonth) return false;
+
+        const currentWeek = getCurrentWeek(year, month);
+        return week > currentWeek;
+    };
+
+    // 월 변경 핸들러
+    const handleMonthChange = async (year: number, month: number) => {
+        setCurrentYear(year);
+        setCurrentMonth(month);
+        const newWeek = getCurrentWeek(year, month);
+        setCurrentWeek(newWeek);
+
+        // 월이 변경되면 새로운 주차 데이터 로드
+        if (weeklyData) {
+            await handleWeekChange(newWeek, year, month);
+        }
+    };
+
+    // 지난달로 이동
+    const handlePreviousMonth = () => {
+        let prevYear = currentYear;
+        let prevMonth = currentMonth - 1;
+
+        if (prevMonth < 1) {
+            prevMonth = 12;
+            prevYear -= 1;
+        }
+
+        handleMonthChange(prevYear, prevMonth);
+    };
+
+    // 현재 달로 이동
+    const handleCurrentMonth = () => {
+        const today = new Date();
+        handleMonthChange(today.getFullYear(), today.getMonth() + 1);
+    };
+
+    // 현재 월인지 확인
+    const isCurrentMonth = () => {
+        const today = new Date();
+        return currentYear === today.getFullYear() && currentMonth === (today.getMonth() + 1);
+    };
+
+    // 주간 데이터를 HTML로 변환
+    const generateBlogContentWithParams = (data: any, year: number, month: number, week: number) => {
+        if (!data || !data.data) return '';
+
+        const overallPosts = data.data.filter((post: any) => post.gubun === '01');
+        const sitePosts: { [key: string]: any[] } = {};
+
+        data.data.forEach((post: any) => {
+            if (post.gubun === '02') {
+                if (!sitePosts[post.site]) {
+                    sitePosts[post.site] = [];
+                }
+                sitePosts[post.site].push(post);
+            }
+        });
+
+        let html = `<h1>${year}년 ${month}월 ${week}주차 커뮤니티 인기글</h1>\n\n`;
+
+        // 실시간 인기글 보러가기 링크 추가
+        html += `<p style="margin-bottom: 20px;">`;
+        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+        html += `</p>\n\n`;
+
+        // 전체 통합 랭킹
+        html += `<h2>🏆 전체 사이트 통합 랭킹 TOP 20</h2>\n`;
+        html += `<ol>\n`;
+        overallPosts.slice(0, 20).forEach((post: any) => {
+            html += `  <li><strong>[${post.site}]</strong> <a href="${post.url}" target="_blank">${post.title}</a> (👍 ${post.likes || 0} | 💬 ${post.reply_num || 0} | 👁 ${post.views || 0})</li>\n`;
+        });
+        html += `</ol>\n\n`;
+
+        // 공간 추가
+        html += `<div style="margin: 40px 0;"></div>\n\n`;
+
+        // 사이트별 랭킹
+        const communityOrder = ['FMKorea', 'TheQoo', 'Ppomppu', 'Ruliweb', 'Inven', 'MlbPark', 'Clien', 'BobaeDream', 'Humoruniv', '82Cook', 'SlrClub', 'Damoang', 'TodayHumor'];
+
+        communityOrder.forEach((site, index) => {
+            if (sitePosts[site] && sitePosts[site].length > 0) {
+                html += `<h3>📌 ${site} TOP 10</h3>\n`;
+                html += `<ol>\n`;
+                sitePosts[site].slice(0, 10).forEach((post: any) => {
+                    html += `  <li><a href="${post.url}" target="_blank">${post.title}</a> (👍 ${post.likes || 0} | 💬 ${post.reply_num || 0} | 👁 ${post.views || 0})</li>\n`;
+                });
+                html += `</ol>\n\n`;
+
+                // 마지막 커뮤니티가 아니면 공간 추가
+                if (index < communityOrder.length - 1) {
+                    html += `<div style="margin: 30px 0;"></div>\n\n`;
+                }
+            }
+        });
+
+        return html;
+    };
+
+    // 주차 변경 핸들러
+    const handleWeekChange = async (week: number, year?: number, month?: number) => {
+        const targetYear = year || currentYear;
+        const targetMonth = month || currentMonth;
+
+        setCurrentWeek(week);
+        setWeeklyDataLoading(true);
+        try {
+            const weekResult = await ApiService.getWeek(
+                targetYear.toString(),
+                String(targetMonth).padStart(2, '0'),
+                week.toString()
+            );
+            setWeeklyData(weekResult);
+
+            // HTML 컨텐츠 생성 - 최신 state 값 사용
+            const blogHtml = generateBlogContentWithParams(weekResult, targetYear, targetMonth, week);
+            setContentText(blogHtml);
+        } catch (error) {
+            console.error('주간 데이터 로드 실패:', error);
+        } finally {
+            setWeeklyDataLoading(false);
+        }
+    };
+
+    // 주차 버튼 생성
+    const renderWeekButtons = () => {
+        const weeksInMonth = getWeeksInMonth(currentYear, currentMonth);
+        const buttons = [];
+
+        for (let week = 1; week <= weeksInMonth; week++) {
+            const isFuture = isFutureWeek(currentYear, currentMonth, week);
+            const isCurrent = week === currentWeek;
+
+            buttons.push(
+                <button
+                    key={week}
+                    type="button"
+                    onClick={() => !isFuture && handleWeekChange(week)}
+                    disabled={isFuture}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isCurrent
+                            ? 'bg-orange-500 text-white cursor-pointer'
+                            : isFuture
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
+                        }`}
+                >
+                    {week}주차
+                </button>
+            );
+        }
+
+        return buttons;
     };
 
     // 로그인 화면
@@ -471,6 +673,17 @@ export default function AdminPage() {
                             <h1 className={`text-xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>shooq 관리자</h1>
                         </div>
                         <div className="flex items-center space-x-4">
+                            <a
+                                href="https://shooq.live"
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center space-x-2 px-4 py-2 text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                            >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <span>실시간 인기글 보기</span>
+                            </a>
                             <button
                                 onClick={toggleDarkMode}
                                 className={`p-2 rounded-lg transition-colors ${isDarkMode
@@ -510,553 +723,694 @@ export default function AdminPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 py-8">
-                {/* 새로고침 버튼 */}
+                {/* 탭 메뉴 */}
                 <div className="mb-6">
-                    <div className="flex items-center justify-between">
-                        <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>대시보드 통계</h2>
-                        <button
-                            onClick={refreshVisitorStats}
-                            disabled={statsLoading}
-                            className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${
-                                isDarkMode
-                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:bg-gray-800 disabled:text-gray-600'
-                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 disabled:bg-gray-50 disabled:text-gray-400'
-                            } disabled:cursor-not-allowed`}
-                            title="방문자 통계 새로고침"
-                        >
-                            <svg
-                                className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`}
-                                fill="none"
-                                stroke="currentColor"
-                                viewBox="0 0 24 24"
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex space-x-2 border-b border-gray-200 dark:border-gray-700">
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('dashboard')}
+                                className={`px-6 py-3 font-medium transition-colors relative ${activeTab === 'dashboard'
+                                        ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
+                                        : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
+                                    }`}
                             >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>새로고침</span>
-                        </button>
+                                대시보드
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('content')}
+                                className={`px-6 py-3 font-medium transition-colors relative ${activeTab === 'content'
+                                        ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
+                                        : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
+                                    }`}
+                            >
+                                컨텐츠 제작
+                            </button>
+                        </div>
+                        {activeTab === 'dashboard' && (
+                            <button
+                                type="button"
+                                onClick={refreshVisitorStats}
+                                disabled={statsLoading}
+                                className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${isDarkMode
+                                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:bg-gray-800 disabled:text-gray-600'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 disabled:bg-gray-50 disabled:text-gray-400'
+                                    } disabled:cursor-not-allowed`}
+                                title="방문자 통계 새로고침"
+                            >
+                                <svg
+                                    className={`w-4 h-4 ${statsLoading ? 'animate-spin' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                <span>새로고침</span>
+                            </button>
+                        )}
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>총 게시물</p>
-                                {statsLoading ? (
-                                    <div className="animate-pulse">
-                                        <div className="h-8 bg-gray-600 rounded w-20 mt-2"></div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col">
-                                        <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {stats.totalPosts.toLocaleString()}
-                                        </p>
-                                        <div className="flex items-center space-x-3 mt-1">
-                                            <div className="flex items-center space-x-1">
-                                                <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
-                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                                                    {stats.communityPosts.toLocaleString()}
-                                                </span>
+                {/* 대시보드 탭 콘텐츠 */}
+                {activeTab === 'dashboard' && (
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>총 게시물</p>
+                                        {statsLoading ? (
+                                            <div className="animate-pulse">
+                                                <div className="h-8 bg-gray-600 rounded w-20 mt-2"></div>
                                             </div>
-                                            <div className="flex items-center space-x-1">
-                                                <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
-                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
-                                                    {stats.newsPosts.toLocaleString()}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                                <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성 사이트</p>
-                                {statsLoading ? (
-                                    <div className="animate-pulse">
-                                        <div className="h-8 bg-gray-600 rounded w-16 mt-2"></div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col">
-                                        <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                            {stats.activeSites}
-                                        </p>
-                                        <div className="flex items-center space-x-3 mt-1">
-                                            <div className="flex items-center space-x-1">
-                                                <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
-                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
-                                                    {stats.communitySites}
-                                                </span>
-                                            </div>
-                                            <div className="flex items-center space-x-1">
-                                                <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
-                                                <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
-                                                    {stats.newsSites}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>방문자</p>
-                                {statsLoading ? (
-                                    <div className="animate-pulse">
-                                        <div className="h-8 bg-gray-600 rounded w-24 mt-2"></div>
-                                    </div>
-                                ) : (
-                                    <div className="flex flex-col">
-                                        <div className="flex items-baseline space-x-2">
-                                            <span className={`text-2xl font-bold text-orange-500`}>
-                                                {stats.todayVisitors.toLocaleString()}
-                                            </span>
-                                            <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>오늘</span>
-                                        </div>
-                                        <div className="flex items-center space-x-2 mt-1">
-                                            <span className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                                {stats.totalVisitors.toLocaleString()}
-                                            </span>
-                                            <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>총 방문자</span>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
-                                <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>시스템 상태</p>
-                                {statsLoading ? (
-                                    <div className="animate-pulse">
-                                        <div className="h-8 bg-gray-600 rounded w-16 mt-2"></div>
-                                    </div>
-                                ) : (
-                                    <p className={`text-3xl font-bold ${stats.systemStatus === '정상' ? 'text-green-600' : 'text-red-600'}`}>
-                                        {stats.systemStatus}
-                                    </p>
-                                )}
-                            </div>
-                            <div className={`w-12 h-12 ${stats.systemStatus === '정상' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-lg flex items-center justify-center`}>
-                                <svg className={`w-6 h-6 ${stats.systemStatus === '정상' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                </svg>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* 크롤링 통계 차트 섹션 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                    {/* 일주일간 크롤링 통계 (막대 차트) */}
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>주간 크롤링 통계</h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 7일간 일별 크롤링 개수</p>
-                        </div>
-                        <div className="p-6">
-                            {weeklyCrawlStatsLoading ? (
-                                <div className="flex justify-center items-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                    <span className={`ml-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>차트 데이터를 불러오는 중...</span>
-                                </div>
-                            ) : weeklyCrawlStats.length > 0 ? (
-                                <div className="h-96">
-                                    <Bar data={createChartData()} options={chartOptions} />
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링 통계 데이터가 없습니다</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* 오늘 사이트별 통계 (도넛 차트) */}
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <div className="flex justify-between items-start">
-                                <div>
-                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>오늘 사이트별 현황</h3>
-                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                        {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 크롤링 현황
-                                    </p>
-                                </div>
-                                <div className="text-right">
-                                    <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>마지막 크롤링 시간</p>
-                                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {latestCrawlTimeLoading ? (
-                                            <span className="animate-pulse">로딩중...</span>
-                                        ) : latestCrawlTime ? (
-                                            (() => {
-                                                const crawlDate = new Date(latestCrawlTime);
-                                                const year = crawlDate.getFullYear();
-                                                const month = String(crawlDate.getMonth() + 1).padStart(2, '0');
-                                                const day = String(crawlDate.getDate()).padStart(2, '0');
-                                                const hour = String(crawlDate.getHours()).padStart(2, '0');
-                                                const minute = String(crawlDate.getMinutes()).padStart(2, '0');
-                                                const second = String(crawlDate.getSeconds()).padStart(2, '0');
-                                                return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                            })()
                                         ) : (
-                                            '데이터 없음'
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6">
-                            {dailySiteStatsLoading ? (
-                                <div className="flex justify-center items-center py-12">
-                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                    <span className={`ml-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>차트 데이터를 불러오는 중...</span>
-                                </div>
-                            ) : dailySiteStats.length > 0 ? (
-                                <div className="h-96">
-                                    <Doughnut data={createSiteChartData()} options={siteChartOptions} />
-                                </div>
-                            ) : (
-                                <div className="text-center py-12">
-                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 크롤링된 데이터가 없습니다</span>
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>사이트 관리</h3>
-                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링 사이트 상태 및 설정</p>
-                        </div>
-                        <div className="p-6">
-                            <div className="space-y-4">
-                                {siteStatsLoading ? (
-                                    <div className="space-y-3">
-                                        {[1, 2, 3, 4].map((i) => (
-                                            <div key={i} className="animate-pulse">
-                                                <div className="flex items-center justify-between py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                    <div className="flex items-center space-x-3">
-                                                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                                                        <div className="h-4 bg-gray-400 rounded w-24"></div>
+                                            <div className="flex flex-col">
+                                                <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {stats.totalPosts.toLocaleString()}
+                                                </p>
+                                                <div className="flex items-center space-x-3 mt-1">
+                                                    <div className="flex items-center space-x-1">
+                                                        <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
+                                                        <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                            {stats.communityPosts.toLocaleString()}
+                                                        </span>
                                                     </div>
-                                                    <div className="h-4 bg-gray-400 rounded w-16"></div>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : siteStats.length > 0 ? (
-                                    <>
-                                        {(showAllSites ? siteStats : siteStats.slice(0, 6)).map((site) => {
-                                            const lastPostDate = site.lastPostDate ? new Date(site.lastPostDate) : null;
-                                            const formattedDate = lastPostDate ?
-                                                `${lastPostDate.getFullYear()}-${(lastPostDate.getMonth() + 1).toString().padStart(2, '0')}-${lastPostDate.getDate().toString().padStart(2, '0')} ${lastPostDate.getHours().toString().padStart(2, '0')}:${lastPostDate.getMinutes().toString().padStart(2, '0')}` :
-                                                '정보 없음';
-
-                                            return (
-                                                <div key={site.site} className="py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                    <div className="flex items-center justify-between">
-                                                        <div className="flex items-center space-x-3">
-                                                            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.site}</span>
-                                                        </div>
-                                                        <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성</span>
-                                                    </div>
-                                                    <div className="ml-6 mt-2 space-y-1">
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>전체 글수:</span>
-                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.postCount.toLocaleString()}개</span>
-                                                        </div>
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 수집:</span>
-                                                            <span className={`font-medium ${site.todayCount > 0 ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
-                                                                {site.todayCount.toLocaleString()}개
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex justify-between text-sm">
-                                                            <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 등록:</span>
-                                                            <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{formattedDate}</span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })}
-
-                                        {siteStats.length > 6 && (
-                                            <button
-                                                type="button"
-                                                onClick={() => setShowAllSites(!showAllSites)}
-                                                className={`w-full py-3 px-4 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${isDarkMode
-                                                    ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
-                                                    : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800'
-                                                    }`}
-                                            >
-                                                <div className="flex items-center justify-center space-x-2">
-                                                    {showAllSites ? (
-                                                        <>
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                                            </svg>
-                                                            <span>접기 ({siteStats.length - 6}개 숨기기)</span>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                            </svg>
-                                                            <span>더보기 ({siteStats.length - 6}개 더 보기)</span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </button>
-                                        )}
-                                    </>
-                                ) : (
-                                    <div className="text-center py-6">
-                                        <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>사이트 데이터가 없습니다</span>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                        <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>컨텐츠 관리</h3>
-                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 등록된 글 목록</p>
-                                </div>
-                                <div className="text-right">
-                                    <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 크롤링</p>
-                                    <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                        {recentPostsByCrawlLoading ? (
-                                            <span className="animate-pulse">로딩중...</span>
-                                        ) : recentPostsByCrawl.length > 0 ? (
-                                            (() => {
-                                                const firstPost = recentPostsByCrawl[0];
-                                                const regDate = firstPost.regDate ? new Date(firstPost.regDate) : null;
-                                                if (!regDate) return '정보 없음';
-
-                                                const now = new Date();
-                                                const diffMs = now.getTime() - regDate.getTime();
-                                                const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                                                const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                                                const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-                                                if (diffMinutes < 60) {
-                                                    return `${diffMinutes}분 전`;
-                                                } else if (diffHours < 24) {
-                                                    return `${diffHours}시간 전`;
-                                                } else {
-                                                    return `${diffDays}일 전`;
-                                                }
-                                            })()
-                                        ) : (
-                                            '정보 없음'
-                                        )}
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-6 space-y-6">
-                            {/* 크롤링 시간 기준 섹션 */}
-                            <div>
-                                <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>크롤링 시간 기준</h4>
-                                <div className="space-y-3">
-                                    {recentPostsByCrawlLoading ? (
-                                        <div className="space-y-3">
-                                            {[1, 2, 3, 4, 5].map((i) => (
-                                                <div key={i} className="animate-pulse">
-                                                    <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                        <div className="space-y-2 flex-1">
-                                                            <div className="h-4 bg-gray-400 rounded w-3/4"></div>
-                                                            <div className="h-3 bg-gray-400 rounded w-1/2"></div>
-                                                        </div>
-                                                        <div className="h-3 bg-gray-400 rounded w-16"></div>
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    ) : recentPostsByCrawl.length > 0 ? (
-                                        recentPostsByCrawl.map((post) => {
-                                            let regDate = null;
-                                            let formattedRegDate = '정보 없음';
-
-                                            if (post.regDate) {
-                                                try {
-                                                    regDate = new Date(post.regDate);
-                                                    // Check if the date is valid
-                                                    if (!isNaN(regDate.getTime())) {
-                                                        const year = regDate.getFullYear();
-                                                        const month = String(regDate.getMonth() + 1).padStart(2, '0');
-                                                        const day = String(regDate.getDate()).padStart(2, '0');
-                                                        const hour = String(regDate.getHours()).padStart(2, '0');
-                                                        const minute = String(regDate.getMinutes()).padStart(2, '0');
-                                                        const second = String(regDate.getSeconds()).padStart(2, '0');
-                                                        formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                    }
-                                                } catch (error) {
-                                                    console.warn('Failed to parse regDate:', post.regDate, error);
-                                                }
-                                            }
-
-                                            return (
-                                                <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center space-x-2 mb-1">
-                                                                <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
-                                                                    {post.site}
-                                                                </span>
-                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                                    {post.date}
-                                                                </span>
-                                                            </div>
-                                                            <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
-                                                                {post.title}
-                                                            </p>
-                                                        </div>
-                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
-                                                            {formattedRegDate}
+                                                    <div className="flex items-center space-x-1">
+                                                        <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
+                                                        <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                                                            {stats.newsPosts.toLocaleString()}
                                                         </span>
                                                     </div>
                                                 </div>
-                                            );
-                                        })
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성 사이트</p>
+                                        {statsLoading ? (
+                                            <div className="animate-pulse">
+                                                <div className="h-8 bg-gray-600 rounded w-16 mt-2"></div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <p className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                    {stats.activeSites}
+                                                </p>
+                                                <div className="flex items-center space-x-3 mt-1">
+                                                    <div className="flex items-center space-x-1">
+                                                        <span className={`text-xs ${isDarkMode ? 'text-blue-400' : 'text-blue-600'}`}>커뮤니티</span>
+                                                        <span className={`text-sm font-medium ${isDarkMode ? 'text-blue-300' : 'text-blue-700'}`}>
+                                                            {stats.communitySites}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center space-x-1">
+                                                        <span className={`text-xs ${isDarkMode ? 'text-green-400' : 'text-green-600'}`}>뉴스</span>
+                                                        <span className={`text-sm font-medium ${isDarkMode ? 'text-green-300' : 'text-green-700'}`}>
+                                                            {stats.newsSites}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>방문자</p>
+                                        {statsLoading ? (
+                                            <div className="animate-pulse">
+                                                <div className="h-8 bg-gray-600 rounded w-24 mt-2"></div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col">
+                                                <div className="flex items-baseline space-x-2">
+                                                    <span className={`text-2xl font-bold text-orange-500`}>
+                                                        {stats.todayVisitors.toLocaleString()}
+                                                    </span>
+                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>오늘</span>
+                                                </div>
+                                                <div className="flex items-center space-x-2 mt-1">
+                                                    <span className={`text-lg font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                        {stats.totalVisitors.toLocaleString()}
+                                                    </span>
+                                                    <span className={`text-xs ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>총 방문자</span>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="w-12 h-12 bg-orange-100 dark:bg-orange-900/30 rounded-lg flex items-center justify-center">
+                                        <svg className="w-6 h-6 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <p className={`text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>시스템 상태</p>
+                                        {statsLoading ? (
+                                            <div className="animate-pulse">
+                                                <div className="h-8 bg-gray-600 rounded w-16 mt-2"></div>
+                                            </div>
+                                        ) : (
+                                            <p className={`text-3xl font-bold ${stats.systemStatus === '정상' ? 'text-green-600' : 'text-red-600'}`}>
+                                                {stats.systemStatus}
+                                            </p>
+                                        )}
+                                    </div>
+                                    <div className={`w-12 h-12 ${stats.systemStatus === '정상' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-red-100 dark:bg-red-900/30'} rounded-lg flex items-center justify-center`}>
+                                        <svg className={`w-6 h-6 ${stats.systemStatus === '정상' ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* 크롤링 통계 차트 섹션 */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                            {/* 일주일간 크롤링 통계 (막대 차트) */}
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
+                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>주간 크롤링 통계</h3>
+                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 7일간 일별 크롤링 개수</p>
+                                </div>
+                                <div className="p-6">
+                                    {weeklyCrawlStatsLoading ? (
+                                        <div className="flex justify-center items-center py-12">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                            <span className={`ml-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>차트 데이터를 불러오는 중...</span>
+                                        </div>
+                                    ) : weeklyCrawlStats.length > 0 ? (
+                                        <div className="h-96">
+                                            <Bar data={createChartData()} options={chartOptions} />
+                                        </div>
                                     ) : (
-                                        <div className="text-center py-4">
-                                            <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링된 글이 없습니다</span>
+                                        <div className="text-center py-12">
+                                            <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링 통계 데이터가 없습니다</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
 
-                            {/* 구분선 */}
-                            <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}></div>
-
-                            {/* 컨텐츠 시간 기준 섹션 */}
-                            <div>
-                                <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>컨텐츠 시간 기준</h4>
-                                <div className="space-y-3">
-                                    {recentPostsByContentLoading ? (
-                                        <div className="space-y-3">
-                                            {[1, 2, 3, 4, 5].map((i) => (
-                                                <div key={i} className="animate-pulse">
-                                                    <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                        <div className="space-y-2 flex-1">
-                                                            <div className="h-4 bg-gray-400 rounded w-3/4"></div>
-                                                            <div className="h-3 bg-gray-400 rounded w-1/2"></div>
-                                                        </div>
-                                                        <div className="h-3 bg-gray-400 rounded w-16"></div>
-                                                    </div>
-                                                </div>
-                                            ))}
+                            {/* 오늘 사이트별 통계 (도넛 차트) */}
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
+                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>오늘 사이트별 현황</h3>
+                                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                {new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' })} 크롤링 현황
+                                            </p>
                                         </div>
-                                    ) : recentPostsByContent.length > 0 ? (
-                                        recentPostsByContent.map((post) => {
-                                            // Handle content date (string field)
-                                            let formattedContentDate = '정보 없음';
-                                            if (post.date) {
-                                                try {
-                                                    const contentDate = new Date(post.date);
-                                                    if (!isNaN(contentDate.getTime())) {
-                                                        const year = contentDate.getFullYear();
-                                                        const month = String(contentDate.getMonth() + 1).padStart(2, '0');
-                                                        const day = String(contentDate.getDate()).padStart(2, '0');
-                                                        const hour = String(contentDate.getHours()).padStart(2, '0');
-                                                        const minute = String(contentDate.getMinutes()).padStart(2, '0');
-                                                        const second = String(contentDate.getSeconds()).padStart(2, '0');
-                                                        formattedContentDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                    } else {
-                                                        // If parsing fails, show the raw date string
-                                                        formattedContentDate = post.date;
-                                                    }
-                                                } catch (error) {
-                                                    console.warn('Failed to parse content date:', post.date, error);
-                                                    // If parsing fails, show the raw date string
-                                                    formattedContentDate = post.date;
-                                                }
-                                            }
-
-                                            // Handle reg date (datetime field)
-                                            let formattedRegDate = '정보 없음';
-                                            if (post.regDate) {
-                                                try {
-                                                    const regDate = new Date(post.regDate);
-                                                    if (!isNaN(regDate.getTime())) {
-                                                        const year = regDate.getFullYear();
-                                                        const month = String(regDate.getMonth() + 1).padStart(2, '0');
-                                                        const day = String(regDate.getDate()).padStart(2, '0');
-                                                        const hour = String(regDate.getHours()).padStart(2, '0');
-                                                        const minute = String(regDate.getMinutes()).padStart(2, '0');
-                                                        const second = String(regDate.getSeconds()).padStart(2, '0');
-                                                        formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                    }
-                                                } catch (error) {
-                                                    console.warn('Failed to parse regDate:', post.regDate, error);
-                                                }
-                                            }
-
-                                            return (
-                                                <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                    <div className="flex justify-between items-start">
-                                                        <div className="flex-1 min-w-0">
-                                                            <div className="flex items-center space-x-2 mb-1">
-                                                                <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
-                                                                    {post.site}
-                                                                </span>
-                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                                    컨텐츠: {formattedContentDate}
-                                                                </span>
-                                                            </div>
-                                                            <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
-                                                                {post.title}
-                                                            </p>
-                                                        </div>
-                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
-                                                            {formattedRegDate}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            );
-                                        })
+                                        <div className="text-right">
+                                            <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>마지막 크롤링 시간</p>
+                                            <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {latestCrawlTimeLoading ? (
+                                                    <span className="animate-pulse">로딩중...</span>
+                                                ) : latestCrawlTime ? (
+                                                    (() => {
+                                                        const crawlDate = new Date(latestCrawlTime);
+                                                        const year = crawlDate.getFullYear();
+                                                        const month = String(crawlDate.getMonth() + 1).padStart(2, '0');
+                                                        const day = String(crawlDate.getDate()).padStart(2, '0');
+                                                        const hour = String(crawlDate.getHours()).padStart(2, '0');
+                                                        const minute = String(crawlDate.getMinutes()).padStart(2, '0');
+                                                        const second = String(crawlDate.getSeconds()).padStart(2, '0');
+                                                        return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                    })()
+                                                ) : (
+                                                    '데이터 없음'
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-6">
+                                    {dailySiteStatsLoading ? (
+                                        <div className="flex justify-center items-center py-12">
+                                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                            <span className={`ml-3 ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>차트 데이터를 불러오는 중...</span>
+                                        </div>
+                                    ) : dailySiteStats.length > 0 ? (
+                                        <div className="h-96">
+                                            <Doughnut data={createSiteChartData()} options={siteChartOptions} />
+                                        </div>
                                     ) : (
-                                        <div className="text-center py-4">
-                                            <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>컨텐츠가 없습니다</span>
+                                        <div className="text-center py-12">
+                                            <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 크롤링된 데이터가 없습니다</span>
                                         </div>
                                     )}
                                 </div>
                             </div>
                         </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
+                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>사이트 관리</h3>
+                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링 사이트 상태 및 설정</p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="space-y-4">
+                                        {siteStatsLoading ? (
+                                            <div className="space-y-3">
+                                                {[1, 2, 3, 4].map((i) => (
+                                                    <div key={i} className="animate-pulse">
+                                                        <div className="flex items-center justify-between py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                            <div className="flex items-center space-x-3">
+                                                                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
+                                                                <div className="h-4 bg-gray-400 rounded w-24"></div>
+                                                            </div>
+                                                            <div className="h-4 bg-gray-400 rounded w-16"></div>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : siteStats.length > 0 ? (
+                                            <>
+                                                {(showAllSites ? siteStats : siteStats.slice(0, 6)).map((site) => {
+                                                    const lastPostDate = site.lastPostDate ? new Date(site.lastPostDate) : null;
+                                                    const formattedDate = lastPostDate ?
+                                                        `${lastPostDate.getFullYear()}-${(lastPostDate.getMonth() + 1).toString().padStart(2, '0')}-${lastPostDate.getDate().toString().padStart(2, '0')} ${lastPostDate.getHours().toString().padStart(2, '0')}:${lastPostDate.getMinutes().toString().padStart(2, '0')}` :
+                                                        '정보 없음';
+
+                                                    return (
+                                                        <div key={site.site} className="py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                            <div className="flex items-center justify-between">
+                                                                <div className="flex items-center space-x-3">
+                                                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.site}</span>
+                                                                </div>
+                                                                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성</span>
+                                                            </div>
+                                                            <div className="ml-6 mt-2 space-y-1">
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>전체 글수:</span>
+                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.postCount.toLocaleString()}개</span>
+                                                                </div>
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 수집:</span>
+                                                                    <span className={`font-medium ${site.todayCount > 0 ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
+                                                                        {site.todayCount.toLocaleString()}개
+                                                                    </span>
+                                                                </div>
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 등록:</span>
+                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{formattedDate}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })}
+
+                                                {siteStats.length > 6 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowAllSites(!showAllSites)}
+                                                        className={`w-full py-3 px-4 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${isDarkMode
+                                                            ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
+                                                            : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800'
+                                                            }`}
+                                                    >
+                                                        <div className="flex items-center justify-center space-x-2">
+                                                            {showAllSites ? (
+                                                                <>
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                                                                    </svg>
+                                                                    <span>접기 ({siteStats.length - 6}개 숨기기)</span>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                                    </svg>
+                                                                    <span>더보기 ({siteStats.length - 6}개 더 보기)</span>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </button>
+                                                )}
+                                            </>
+                                        ) : (
+                                            <div className="text-center py-6">
+                                                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>사이트 데이터가 없습니다</span>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
+                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>컨텐츠 관리</h3>
+                                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 등록된 글 목록</p>
+                                        </div>
+                                        <div className="text-right">
+                                            <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 크롤링</p>
+                                            <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                                {recentPostsByCrawlLoading ? (
+                                                    <span className="animate-pulse">로딩중...</span>
+                                                ) : recentPostsByCrawl.length > 0 ? (
+                                                    (() => {
+                                                        const firstPost = recentPostsByCrawl[0];
+                                                        const regDate = firstPost.regDate ? new Date(firstPost.regDate) : null;
+                                                        if (!regDate) return '정보 없음';
+
+                                                        const now = new Date();
+                                                        const diffMs = now.getTime() - regDate.getTime();
+                                                        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                                                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                                                        if (diffMinutes < 60) {
+                                                            return `${diffMinutes}분 전`;
+                                                        } else if (diffHours < 24) {
+                                                            return `${diffHours}시간 전`;
+                                                        } else {
+                                                            return `${diffDays}일 전`;
+                                                        }
+                                                    })()
+                                                ) : (
+                                                    '정보 없음'
+                                                )}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="p-6 space-y-6">
+                                    {/* 크롤링 시간 기준 섹션 */}
+                                    <div>
+                                        <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>크롤링 시간 기준</h4>
+                                        <div className="space-y-3">
+                                            {recentPostsByCrawlLoading ? (
+                                                <div className="space-y-3">
+                                                    {[1, 2, 3, 4, 5].map((i) => (
+                                                        <div key={i} className="animate-pulse">
+                                                            <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                                <div className="space-y-2 flex-1">
+                                                                    <div className="h-4 bg-gray-400 rounded w-3/4"></div>
+                                                                    <div className="h-3 bg-gray-400 rounded w-1/2"></div>
+                                                                </div>
+                                                                <div className="h-3 bg-gray-400 rounded w-16"></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : recentPostsByCrawl.length > 0 ? (
+                                                recentPostsByCrawl.map((post) => {
+                                                    let regDate = null;
+                                                    let formattedRegDate = '정보 없음';
+
+                                                    if (post.regDate) {
+                                                        try {
+                                                            regDate = new Date(post.regDate);
+                                                            // Check if the date is valid
+                                                            if (!isNaN(regDate.getTime())) {
+                                                                const year = regDate.getFullYear();
+                                                                const month = String(regDate.getMonth() + 1).padStart(2, '0');
+                                                                const day = String(regDate.getDate()).padStart(2, '0');
+                                                                const hour = String(regDate.getHours()).padStart(2, '0');
+                                                                const minute = String(regDate.getMinutes()).padStart(2, '0');
+                                                                const second = String(regDate.getSeconds()).padStart(2, '0');
+                                                                formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                            }
+                                                        } catch (error) {
+                                                            console.warn('Failed to parse regDate:', post.regDate, error);
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center space-x-2 mb-1">
+                                                                        <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
+                                                                            {post.site}
+                                                                        </span>
+                                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                                            {post.date}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
+                                                                        {post.title}
+                                                                    </p>
+                                                                </div>
+                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
+                                                                    {formattedRegDate}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="text-center py-4">
+                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링된 글이 없습니다</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* 구분선 */}
+                                    <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}></div>
+
+                                    {/* 컨텐츠 시간 기준 섹션 */}
+                                    <div>
+                                        <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>컨텐츠 시간 기준</h4>
+                                        <div className="space-y-3">
+                                            {recentPostsByContentLoading ? (
+                                                <div className="space-y-3">
+                                                    {[1, 2, 3, 4, 5].map((i) => (
+                                                        <div key={i} className="animate-pulse">
+                                                            <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                                <div className="space-y-2 flex-1">
+                                                                    <div className="h-4 bg-gray-400 rounded w-3/4"></div>
+                                                                    <div className="h-3 bg-gray-400 rounded w-1/2"></div>
+                                                                </div>
+                                                                <div className="h-3 bg-gray-400 rounded w-16"></div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : recentPostsByContent.length > 0 ? (
+                                                recentPostsByContent.map((post) => {
+                                                    // Handle content date (string field)
+                                                    let formattedContentDate = '정보 없음';
+                                                    if (post.date) {
+                                                        try {
+                                                            const contentDate = new Date(post.date);
+                                                            if (!isNaN(contentDate.getTime())) {
+                                                                const year = contentDate.getFullYear();
+                                                                const month = String(contentDate.getMonth() + 1).padStart(2, '0');
+                                                                const day = String(contentDate.getDate()).padStart(2, '0');
+                                                                const hour = String(contentDate.getHours()).padStart(2, '0');
+                                                                const minute = String(contentDate.getMinutes()).padStart(2, '0');
+                                                                const second = String(contentDate.getSeconds()).padStart(2, '0');
+                                                                formattedContentDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                            } else {
+                                                                // If parsing fails, show the raw date string
+                                                                formattedContentDate = post.date;
+                                                            }
+                                                        } catch (error) {
+                                                            console.warn('Failed to parse content date:', post.date, error);
+                                                            // If parsing fails, show the raw date string
+                                                            formattedContentDate = post.date;
+                                                        }
+                                                    }
+
+                                                    // Handle reg date (datetime field)
+                                                    let formattedRegDate = '정보 없음';
+                                                    if (post.regDate) {
+                                                        try {
+                                                            const regDate = new Date(post.regDate);
+                                                            if (!isNaN(regDate.getTime())) {
+                                                                const year = regDate.getFullYear();
+                                                                const month = String(regDate.getMonth() + 1).padStart(2, '0');
+                                                                const day = String(regDate.getDate()).padStart(2, '0');
+                                                                const hour = String(regDate.getHours()).padStart(2, '0');
+                                                                const minute = String(regDate.getMinutes()).padStart(2, '0');
+                                                                const second = String(regDate.getSeconds()).padStart(2, '0');
+                                                                formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+                                                            }
+                                                        } catch (error) {
+                                                            console.warn('Failed to parse regDate:', post.regDate, error);
+                                                        }
+                                                    }
+
+                                                    return (
+                                                        <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                                                            <div className="flex justify-between items-start">
+                                                                <div className="flex-1 min-w-0">
+                                                                    <div className="flex items-center space-x-2 mb-1">
+                                                                        <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
+                                                                            {post.site}
+                                                                        </span>
+                                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
+                                                                            컨텐츠: {formattedContentDate}
+                                                                        </span>
+                                                                    </div>
+                                                                    <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
+                                                                        {post.title}
+                                                                    </p>
+                                                                </div>
+                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
+                                                                    {formattedRegDate}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="text-center py-4">
+                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>컨텐츠가 없습니다</span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                {/* 컨텐츠 제작 탭 콘텐츠 */}
+                {activeTab === 'content' && (
+                    <div>
+                        {/* 페이지 타이틀 */}
+                        <div className="mb-6">
+                            <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                커뮤니티 인기글 주간집계
+                            </h2>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+                                오늘 기준 {currentYear}년 {currentMonth}월 주간별 집계를 확인하세요
+                            </p>
+                        </div>
+
+                        {/* 월 및 주차 네비게이션 */}
+                        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6 mb-6`}>
+                            {/* 월 선택 탭 */}
+                            <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                                <nav className="flex space-x-4" aria-label="Tabs">
+                                    <button
+                                        type="button"
+                                        onClick={handlePreviousMonth}
+                                        className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${!isCurrentMonth()
+                                                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            }`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                        </svg>
+                                        지난달
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleCurrentMonth}
+                                        className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${isCurrentMonth()
+                                                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            }`}
+                                    >
+                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                        현재
+                                    </button>
+                                </nav>
+                            </div>
+
+                            {/* 주차 선택 버튼 */}
+                            <div className="flex flex-wrap gap-2">
+                                {renderWeekButtons()}
+                            </div>
+                            <div className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
+                                현재 선택: {currentYear}년 {currentMonth}월 {currentWeek}주차
+                            </div>
+                        </div>
+
+                        {/* 컨텐츠 제작 영역 */}
+                        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6`}>
+                            <div className="mb-4 flex items-center justify-between">
+                                <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                    블로그 컨텐츠
+                                </h3>
+                                {contentText && (
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const contentElement = document.getElementById('blog-content-preview');
+                                            if (contentElement) {
+                                                const htmlContent = contentElement.innerHTML;
+                                                navigator.clipboard.writeText(htmlContent);
+                                                alert('HTML이 클립보드에 복사되었습니다!');
+                                            }
+                                        }}
+                                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        📋 HTML 복사하기
+                                    </button>
+                                )}
+                            </div>
+
+                            {weeklyDataLoading ? (
+                                <div className="text-center py-12">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                                    <p className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>주간 데이터를 불러오는 중...</p>
+                                </div>
+                            ) : contentText ? (
+                                <div>
+                                    <div
+                                        id="blog-content-preview"
+                                        className={`w-full min-h-[600px] p-6 rounded-lg border ${isDarkMode
+                                                ? 'bg-gray-900 border-gray-700 text-gray-300'
+                                                : 'bg-white border-gray-300 text-gray-900'
+                                            }`}
+                                        dangerouslySetInnerHTML={{ __html: contentText }}
+                                    />
+                                    <div className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        총 {weeklyData.data?.length || 0}개의 게시물 | {contentText.length} 글자
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="text-center py-12">
+                                    <svg className={`w-16 h-16 mx-auto mb-4 ${isDarkMode ? 'text-gray-600' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                                        주차를 선택하여 블로그 컨텐츠를 생성하세요
+                                    </p>
+                                </div>
+                            )}
+                        </div>
                     </div>
-                </div>
+                )}
             </main>
         </div>
     );
