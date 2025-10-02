@@ -75,59 +75,32 @@ const StorageUtils = {
 
 // 주차 계산 유틸리티 (월요일 기준)
 const WeekUtils = {
-    // 해당 월의 주차 수 계산 (월요일 기준)
+    // 해당 월의 주차 수 계산 (간단한 방식: 7일 단위)
     getWeeksInMonth: (year: number, month: number): number => {
-        const firstDay = new Date(year, month - 1, 1);
         const lastDay = new Date(year, month, 0);
-        const firstWeekDay = firstDay.getDay(); // 0: 일요일, 1: 월요일 ...
         const daysInMonth = lastDay.getDate();
 
-        // 월요일 기준으로 조정 (일요일을 7로 변경)
-        const adjustedFirstWeekDay = firstWeekDay === 0 ? 7 : firstWeekDay;
-
-        // 첫 번째 월요일까지의 일수
-        const daysToFirstMonday = adjustedFirstWeekDay === 1 ? 1 : 8 - adjustedFirstWeekDay + 1;
-
-        if (daysToFirstMonday > daysInMonth) {
-            // 해당 월에 월요일이 없는 경우 (거의 없지만)
-            return 0;
-        }
-
-        // 첫 번째 월요일 이후의 일수
-        const remainingDays = daysInMonth - daysToFirstMonday + 1;
-        return Math.ceil(remainingDays / 7);
+        // 월의 총 일수를 7로 나누어 주차 수 계산 (더 직관적)
+        return Math.ceil(daysInMonth / 7);
     },
 
-    // 현재 주차 계산 (월요일 기준)
+    // 현재 주차 계산 (간단한 방식: 날짜 기준)
     getCurrentWeek: (year: number, month: number): number => {
         const today = new Date();
         const currentYear = today.getFullYear();
         const currentMonth = today.getMonth() + 1;
         const currentDate = today.getDate();
 
-        // 다른 년월인 경우 마지막 주차 반환
+        // 다른 년월인 경우 첫주 반환 (1주차)
         if (year !== currentYear || month !== currentMonth) {
-            return WeekUtils.getWeeksInMonth(year, month);
+            return 1;
         }
 
-        const firstDay = new Date(year, month - 1, 1);
-        const firstWeekDay = firstDay.getDay();
-
-        // 월요일 기준으로 조정
-        const adjustedFirstWeekDay = firstWeekDay === 0 ? 7 : firstWeekDay;
-        const daysToFirstMonday = adjustedFirstWeekDay === 1 ? 1 : 8 - adjustedFirstWeekDay + 1;
-
-        if (currentDate < daysToFirstMonday) {
-            // 첫 번째 월요일 이전이면 아직 1주차 시작 전
-            return 0;
-        }
-
-        // 첫 번째 월요일부터의 경과 일수
-        const daysSinceFirstMonday = currentDate - daysToFirstMonday + 1;
-        return Math.ceil(daysSinceFirstMonday / 7);
+        // 현재 날짜를 7로 나누어 주차 계산 (1일~7일=1주차, 8일~14일=2주차...)
+        return Math.ceil(currentDate / 7);
     },
 
-    // 미래 주차인지 확인 (월요일 기준)
+    // 미래 주차인지 확인 (간단한 방식)
     isFutureWeek: (year: number, month: number, week: number): boolean => {
         const today = new Date();
         const currentYear = today.getFullYear();
@@ -411,6 +384,45 @@ function WeekContent() {
         loadWeeklyData();
     }, [loadWeeklyData]);
 
+    // 월 변경 핸들러
+    const handleMonthChange = (targetYear: number, targetMonth: number) => {
+        const today = new Date();
+        const isCurrentMonth = targetYear === today.getFullYear() && targetMonth === (today.getMonth() + 1);
+
+        // 현재 월이면 현재 주차, 아니면 마지막 주차
+        const targetWeek = isCurrentMonth
+            ? WeekUtils.getCurrentWeek(targetYear, targetMonth)
+            : WeekUtils.getWeeksInMonth(targetYear, targetMonth);
+
+        const url = `/week?yyyy=${targetYear}&mm=${String(targetMonth).padStart(2, '0')}&w=${targetWeek}`;
+        window.location.href = url;
+    };
+
+    // 지난달로 이동
+    const handlePreviousMonth = () => {
+        let prevYear = currentYear;
+        let prevMonth = currentMonth - 1;
+
+        if (prevMonth < 1) {
+            prevMonth = 12;
+            prevYear -= 1;
+        }
+
+        handleMonthChange(prevYear, prevMonth);
+    };
+
+    // 현재 달로 이동
+    const handleCurrentMonth = () => {
+        const today = new Date();
+        handleMonthChange(today.getFullYear(), today.getMonth() + 1);
+    };
+
+    // 현재 월인지 확인
+    const isCurrentMonth = () => {
+        const today = new Date();
+        return currentYear === today.getFullYear() && currentMonth === (today.getMonth() + 1);
+    };
+
     // 주차 버튼 생성
     const renderWeekButtons = () => {
         const weeksInMonth = WeekUtils.getWeeksInMonth(currentYear, currentMonth);
@@ -428,10 +440,10 @@ function WeekContent() {
                     onClick={() => !isFuture && (window.location.href = url)}
                     disabled={isFuture}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isCurrent
-                            ? 'bg-orange-500 text-white'
+                            ? 'bg-orange-500 text-white cursor-pointer'
                             : isFuture
                                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
                         }`}
                 >
                     {week}주차
@@ -518,8 +530,43 @@ function WeekContent() {
                         </p>
                     </div>
 
-                    {/* Week Navigation */}
+                    {/* Month and Week Navigation */}
                     <div className="mb-6">
+                        {/* 월 선택 탭 */}
+                        <div className="mb-4 border-b border-gray-200 dark:border-gray-700">
+                            <nav className="flex space-x-4" aria-label="Tabs">
+                                <button
+                                    type="button"
+                                    onClick={handlePreviousMonth}
+                                    className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+                                        !isCurrentMonth()
+                                            ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                    }`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                    지난달
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={handleCurrentMonth}
+                                    className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
+                                        isCurrentMonth()
+                                            ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                    }`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                    </svg>
+                                    현재
+                                </button>
+                            </nav>
+                        </div>
+
+                        {/* 주차 선택 버튼 */}
                         <div className="flex flex-wrap gap-2">
                             {renderWeekButtons()}
                         </div>
