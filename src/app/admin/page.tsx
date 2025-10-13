@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ApiService, AdminStats, SiteStats, RecentPost, DailyCrawlStats, DailySiteStats } from '@/lib/api';
+import { ApiService, AdminStats, SiteStats, RecentPost, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -87,7 +87,7 @@ export default function AdminPage() {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
     const [currentWeek, setCurrentWeek] = useState(1);
-    const [weeklyData, setWeeklyData] = useState<any>(null);
+    const [weeklyData, setWeeklyData] = useState<{ data: SiteBbsInfo[] } | null>(null);
     const [weeklyDataLoading, setWeeklyDataLoading] = useState(false);
     const [contentText, setContentText] = useState('');
 
@@ -472,14 +472,14 @@ export default function AdminPage() {
     };
 
     // 주간 데이터를 HTML로 변환
-    const generateBlogContentWithParams = (data: any, year: number, month: number, week: number) => {
-        if (!data || !data.data) return '';
+    const generateBlogContentWithParams = (data: { data: SiteBbsInfo[] }, year: number, month: number, week: number) => {
+        if (!data || !data.data || !Array.isArray(data.data)) return '';
 
-        const overallPosts = data.data.filter((post: any) => post.gubun === '01');
-        const sitePosts: { [key: string]: any[] } = {};
+        const overallPosts = data.data.filter((post: SiteBbsInfo) => post?.gubun === '01');
+        const sitePosts: { [key: string]: SiteBbsInfo[] } = {};
 
-        data.data.forEach((post: any) => {
-            if (post.gubun === '02') {
+        data.data.forEach((post: SiteBbsInfo) => {
+            if (post?.gubun === '02' && post?.site) {
                 if (!sitePosts[post.site]) {
                     sitePosts[post.site] = [];
                 }
@@ -497,7 +497,7 @@ export default function AdminPage() {
         // 전체 통합 랭킹
         html += `<h2>🏆 전체 사이트 통합 랭킹 TOP 20</h2>\n`;
         html += `<ol>\n`;
-        overallPosts.slice(0, 20).forEach((post: any) => {
+        overallPosts.slice(0, 20).forEach((post: SiteBbsInfo) => {
             html += `  <li><strong>[${post.site}]</strong> <a href="${post.url}" target="_blank">${post.title}</a> (👍 ${post.likes || 0} | 💬 ${post.reply_num || 0} | 👁 ${post.views || 0})</li>\n`;
         });
         html += `</ol>\n\n`;
@@ -512,7 +512,7 @@ export default function AdminPage() {
             if (sitePosts[site] && sitePosts[site].length > 0) {
                 html += `<h3>📌 ${site} TOP 10</h3>\n`;
                 html += `<ol>\n`;
-                sitePosts[site].slice(0, 10).forEach((post: any) => {
+                sitePosts[site].slice(0, 10).forEach((post: SiteBbsInfo) => {
                     html += `  <li><a href="${post.url}" target="_blank">${post.title}</a> (👍 ${post.likes || 0} | 💬 ${post.reply_num || 0} | 👁 ${post.views || 0})</li>\n`;
                 });
                 html += `</ol>\n\n`;
@@ -1395,7 +1395,7 @@ export default function AdminPage() {
                                         dangerouslySetInnerHTML={{ __html: contentText }}
                                     />
                                     <div className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                                        총 {weeklyData.data?.length || 0}개의 게시물 | {contentText.length} 글자
+                                        총 {weeklyData?.data?.length || 0}개의 게시물 | {contentText.length} 글자
                                     </div>
                                 </div>
                             ) : (
