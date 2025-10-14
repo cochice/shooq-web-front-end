@@ -87,6 +87,7 @@ export default function AdminPage() {
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
     const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
     const [currentWeek, setCurrentWeek] = useState(1);
+    const [selectedDate, setSelectedDate] = useState<string | null>(null);
     const [weeklyData, setWeeklyData] = useState<{ data: SiteBbsInfo[] } | null>(null);
     const [weeklyDataLoading, setWeeklyDataLoading] = useState(false);
     const [contentText, setContentText] = useState('');
@@ -472,7 +473,7 @@ export default function AdminPage() {
     };
 
     // 주간 데이터를 HTML로 변환
-    const generateBlogContentWithParams = (data: { data: SiteBbsInfo[] }, year: number, month: number, week: number) => {
+    const generateBlogContentWithParams = (data: { data: SiteBbsInfo[] }, year: number, month: number, week: number, dateStr?: string) => {
         if (!data || !data.data || !Array.isArray(data.data)) return '';
 
         const overallPosts = data.data.filter((post: SiteBbsInfo) => post?.gubun === '01');
@@ -487,7 +488,17 @@ export default function AdminPage() {
             }
         });
 
-        let html = `<h1>${year}년 ${month}월 ${week}주차 커뮤니티 인기글</h1>\n\n`;
+        // 요일이 선택된 경우 날짜 형식으로 표시, 아니면 주차로 표시
+        let titleText = '';
+        if (dateStr) {
+            const dateObj = new Date(dateStr);
+            const day = dateObj.getDate();
+            titleText = `${year}년 ${month}월 ${day}일 커뮤니티 인기글`;
+        } else {
+            titleText = `${year}년 ${month}월 ${week}주차 커뮤니티 인기글`;
+        }
+
+        let html = `<h1>${titleText}</h1>\n\n`;
 
         // 실시간 인기글 보러가기 링크 추가
         html += `<p style="margin-bottom: 20px;">`;
@@ -501,6 +512,11 @@ export default function AdminPage() {
             html += `  <li><strong>[${post.site}]</strong> <a href="${post.url}" target="_blank">${post.title}</a> (👍 ${post.likes || 0} | 💬 ${post.reply_num || 0} | 👁 ${post.views || 0})</li>\n`;
         });
         html += `</ol>\n\n`;
+
+        // 실시간 인기글 보러가기 링크 추가
+        html += `<p style="margin-bottom: 20px;">`;
+        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+        html += `</p>\n\n`;
 
         // 공간 추가
         html += `<div style="margin: 40px 0;"></div>\n\n`;
@@ -517,6 +533,11 @@ export default function AdminPage() {
                 });
                 html += `</ol>\n\n`;
 
+                // 실시간 인기글 보러가기 링크 추가
+                html += `<p style="margin-bottom: 20px;">`;
+                html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+                html += `</p>\n\n`;
+
                 // 마지막 커뮤니티가 아니면 공간 추가
                 if (index < communityOrder.length - 1) {
                     html += `<div style="margin: 30px 0;"></div>\n\n`;
@@ -528,25 +549,80 @@ export default function AdminPage() {
     };
 
     // 주차 변경 핸들러
-    const handleWeekChange = async (week: number, year?: number, month?: number) => {
+    const handleWeekChange = async (week: number, year?: number, month?: number, dateParam?: string) => {
         const targetYear = year || currentYear;
         const targetMonth = month || currentMonth;
 
         setCurrentWeek(week);
+        setSelectedDate(dateParam || null);
         setWeeklyDataLoading(true);
         try {
             const weekResult = await ApiService.getWeek(
                 targetYear.toString(),
                 String(targetMonth).padStart(2, '0'),
-                week.toString()
+                week.toString(),
+                dateParam
             );
             setWeeklyData(weekResult);
 
-            // HTML 컨텐츠 생성 - 최신 state 값 사용
-            const blogHtml = generateBlogContentWithParams(weekResult, targetYear, targetMonth, week);
+            // HTML 컨텐츠 생성 - dateParam 전달
+            const blogHtml = generateBlogContentWithParams(weekResult, targetYear, targetMonth, week, dateParam);
             setContentText(blogHtml);
         } catch (error) {
             console.error('주간 데이터 로드 실패:', error);
+        } finally {
+            setWeeklyDataLoading(false);
+        }
+    };
+
+    // 해당 주차의 요일별 날짜 계산
+    const getDaysOfWeek = (year: number, month: number, week: number): { day: string; date: string; isToday: boolean; isFuture: boolean }[] => {
+        const firstDay = new Date(year, month - 1, 1);
+        const weekStart = new Date(firstDay);
+        weekStart.setDate(firstDay.getDate() + (week - 1) * 7);
+
+        const days = ['월', '화', '수', '목', '금', '토', '일'];
+        const result = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 0; i < 7; i++) {
+            const currentDate = new Date(weekStart);
+            currentDate.setDate(weekStart.getDate() + i);
+
+            const dateStr = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
+            const checkDate = new Date(currentDate);
+            checkDate.setHours(0, 0, 0, 0);
+
+            result.push({
+                day: days[i],
+                date: dateStr,
+                isToday: checkDate.getTime() === today.getTime(),
+                isFuture: checkDate > today
+            });
+        }
+
+        return result;
+    };
+
+    // 요일 버튼 클릭 핸들러
+    const handleDayClick = async (dateStr: string) => {
+        setSelectedDate(dateStr);
+        setWeeklyDataLoading(true);
+        try {
+            const weekResult = await ApiService.getWeek(
+                currentYear.toString(),
+                String(currentMonth).padStart(2, '0'),
+                currentWeek.toString(),
+                dateStr
+            );
+            setWeeklyData(weekResult);
+
+            // HTML 컨텐츠 생성 - dateStr 전달
+            const blogHtml = generateBlogContentWithParams(weekResult, currentYear, currentMonth, currentWeek, dateStr);
+            setContentText(blogHtml);
+        } catch (error) {
+            console.error('요일별 데이터 로드 실패:', error);
         } finally {
             setWeeklyDataLoading(false);
         }
@@ -580,6 +656,30 @@ export default function AdminPage() {
         }
 
         return buttons;
+    };
+
+    // 요일 버튼 렌더링
+    const renderDayButtons = () => {
+        const daysOfWeek = getDaysOfWeek(currentYear, currentMonth, currentWeek);
+
+        return daysOfWeek.map((dayInfo) => (
+            <button
+                key={dayInfo.date}
+                type="button"
+                onClick={() => !dayInfo.isFuture && handleDayClick(dayInfo.date)}
+                disabled={dayInfo.isFuture}
+                className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedDate === dayInfo.date
+                        ? 'bg-orange-500 text-white cursor-pointer'
+                        : dayInfo.isToday
+                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 cursor-pointer'
+                            : dayInfo.isFuture
+                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
+                    }`}
+            >
+                {dayInfo.day} ({dayInfo.date.slice(8, 10)})
+            </button>
+        ));
     };
 
     // 로그인 화면
@@ -1347,11 +1447,25 @@ export default function AdminPage() {
                             </div>
 
                             {/* 주차 선택 버튼 */}
-                            <div className="flex flex-wrap gap-2">
-                                {renderWeekButtons()}
+                            <div className="mb-4">
+                                <div className="flex flex-wrap gap-2">
+                                    {renderWeekButtons()}
+                                </div>
                             </div>
+
+                            {/* 요일 선택 탭 */}
+                            <div className="mb-4">
+                                <div className={`text-sm font-medium mb-2 ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                    요일별 조회
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                    {renderDayButtons()}
+                                </div>
+                            </div>
+
                             <div className={`mt-2 text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>
                                 현재 선택: {currentYear}년 {currentMonth}월 {currentWeek}주차
+                                {selectedDate && ` - ${selectedDate}`}
                             </div>
                         </div>
 
