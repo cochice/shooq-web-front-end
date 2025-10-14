@@ -33,7 +33,6 @@ const HARDCODED_SITES = {
         { code: 'GoogleNews', name: 'GoogleNews', letter: 'G', bgColor: 'rgb(53, 112, 255)', textColor: 'white' }
     ],
     community: [
-        { code: 'FMKorea', name: 'FMKorea', letter: 'F', bgColor: 'rgb(62, 97, 197)', textColor: 'white' },
         { code: 'Humoruniv', name: 'Humoruniv', letter: 'H', bgColor: 'rgb(219, 23, 55)', textColor: 'white' },
         { code: 'TheQoo', name: 'TheQoo', letter: 'T', bgColor: 'rgb(42, 65, 95)', textColor: 'white' },
         { code: 'Ppomppu', name: 'Ppomppu', letter: 'P', bgColor: 'rgb(199, 199, 199)', textColor: 'rgb(75, 85, 99)' },
@@ -42,10 +41,11 @@ const HARDCODED_SITES = {
         { code: 'SlrClub', name: 'SlrClub', letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
         { code: 'Ruliweb', name: 'Ruliweb', letter: 'R', bgColor: 'rgb(255, 102, 0)', textColor: 'white' },
         { code: '82Cook', name: '82Cook', letter: '8', bgColor: 'rgb(230, 230, 230)', textColor: 'rgb(75, 85, 99)' },
-        { code: 'MlbPark', name: 'MlbPark', letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
         { code: 'BobaeDream', name: 'BobaeDream', letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
         { code: 'Inven', name: 'Inven', letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
-        { code: 'Damoang', name: 'Damoang', letter: 'D', bgColor: 'rgb(138, 43, 226)', textColor: 'white' }
+        { code: 'Damoang', name: 'Damoang', letter: 'D', bgColor: 'rgb(138, 43, 226)', textColor: 'white' },
+        { code: 'FMKorea', name: 'FMKorea', letter: 'F', bgColor: 'rgb(62, 97, 197)', textColor: 'white' },
+        { code: 'MlbPark', name: 'MlbPark', letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
     ]
 };
 
