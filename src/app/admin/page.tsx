@@ -506,7 +506,7 @@ export default function AdminPage() {
         html += `<div style="margin: 40px 0;"></div>\n\n`;
 
         // 사이트별 랭킹
-        const communityOrder = ['FMKorea', 'TheQoo', 'Ppomppu', 'Ruliweb', 'Inven', 'MlbPark', 'Clien', 'BobaeDream', 'Humoruniv', '82Cook', 'SlrClub', 'Damoang', 'TodayHumor'];
+        const communityOrder = ['TheQoo', 'Ppomppu', 'Ruliweb', 'Inven', 'MlbPark', 'Clien', 'BobaeDream', 'Humoruniv', '82Cook', 'SlrClub', 'Damoang', 'TodayHumor', 'FMKorea'];
 
         communityOrder.forEach((site, index) => {
             if (sitePosts[site] && sitePosts[site].length > 0) {
@@ -568,10 +568,10 @@ export default function AdminPage() {
                     onClick={() => !isFuture && handleWeekChange(week)}
                     disabled={isFuture}
                     className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isCurrent
-                            ? 'bg-orange-500 text-white cursor-pointer'
-                            : isFuture
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
+                        ? 'bg-orange-500 text-white cursor-pointer'
+                        : isFuture
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
                         }`}
                 >
                     {week}주차
@@ -731,8 +731,8 @@ export default function AdminPage() {
                                 type="button"
                                 onClick={() => setActiveTab('dashboard')}
                                 className={`px-6 py-3 font-medium transition-colors relative ${activeTab === 'dashboard'
-                                        ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
-                                        : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
+                                    ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
+                                    : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
                                     }`}
                             >
                                 대시보드
@@ -741,8 +741,8 @@ export default function AdminPage() {
                                 type="button"
                                 onClick={() => setActiveTab('content')}
                                 className={`px-6 py-3 font-medium transition-colors relative ${activeTab === 'content'
-                                        ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
-                                        : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
+                                    ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
+                                    : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
                                     }`}
                             >
                                 컨텐츠 제작
@@ -754,8 +754,8 @@ export default function AdminPage() {
                                 onClick={refreshVisitorStats}
                                 disabled={statsLoading}
                                 className={`px-4 py-2 rounded-lg transition-colors flex items-center space-x-2 ${isDarkMode
-                                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:bg-gray-800 disabled:text-gray-600'
-                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 disabled:bg-gray-50 disabled:text-gray-400'
+                                    ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white disabled:bg-gray-800 disabled:text-gray-600'
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800 disabled:bg-gray-50 disabled:text-gray-400'
                                     } disabled:cursor-not-allowed`}
                                 title="방문자 통계 새로고침"
                             >
@@ -1321,8 +1321,8 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={handlePreviousMonth}
                                         className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${!isCurrentMonth()
-                                                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                                             }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1334,8 +1334,8 @@ export default function AdminPage() {
                                         type="button"
                                         onClick={handleCurrentMonth}
                                         className={`flex items-center gap-2 pb-3 px-1 border-b-2 font-medium text-sm transition-colors cursor-pointer ${isCurrentMonth()
-                                                ? 'border-orange-500 text-orange-600 dark:text-orange-400'
-                                                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
+                                            ? 'border-orange-500 text-orange-600 dark:text-orange-400'
+                                            : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 dark:text-gray-400 dark:hover:text-gray-300'
                                             }`}
                                     >
                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1389,8 +1389,8 @@ export default function AdminPage() {
                                     <div
                                         id="blog-content-preview"
                                         className={`w-full min-h-[600px] p-6 rounded-lg border ${isDarkMode
-                                                ? 'bg-gray-900 border-gray-700 text-gray-300'
-                                                : 'bg-white border-gray-300 text-gray-900'
+                                            ? 'bg-gray-900 border-gray-700 text-gray-300'
+                                            : 'bg-white border-gray-300 text-gray-900'
                                             }`}
                                         dangerouslySetInnerHTML={{ __html: contentText }}
                                     />
