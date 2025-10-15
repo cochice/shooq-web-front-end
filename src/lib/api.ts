@@ -168,12 +168,14 @@ export class ApiService {
  static async getWeek(
     yyyy?: string,
     mm?: string,
-    w?: string
+    w?: string,
+    d?: string
   ): Promise<PagedResult<SiteBbsInfo>> {
     const params = new URLSearchParams();
     if (yyyy) params.append('yyyy', yyyy);
     if (mm) params.append('mm', mm);
     if (w) params.append('w', w);
+    if (d) params.append('d', d);
 
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/week?${params.toString()}`);
   }
