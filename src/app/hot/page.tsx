@@ -188,7 +188,7 @@ export default function Home() {
         const trimmedKeyword = keyword.trim();
         if (trimmedKeyword) {
             // hot 페이지로 keyword 파라미터와 함께 이동
-            window.location.href = `/hot?keyword=${encodeURIComponent(trimmedKeyword)}`;
+            window.location.href = `/?keyword=${encodeURIComponent(trimmedKeyword)}`;
         }
     }, []);
 
@@ -257,7 +257,7 @@ export default function Home() {
             <article key={`post-${post.no}-${index}`} className={`rounded-lg border transition-colors ${isRead
                 ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
                 : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}>
+                }`}>
                 <div className="p-4">
                     <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                         {post.site && (
@@ -333,9 +333,8 @@ export default function Home() {
                             <img
                                 src={post.cloudinary_url}
                                 alt="첨부 이미지"
-                                className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${
-                                    isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                }`}
+                                className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                    }`}
                                 loading="lazy"
                                 onError={(e) => {
                                     const target = e.target as HTMLImageElement;
@@ -384,14 +383,14 @@ export default function Home() {
     const SectionHeader = ({ title, linkTo }: { title: string; linkTo: string }) => (
         <div className="flex items-center justify-between mb-4">
             <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-            
+
             {linkTo && (
-            <Link
-                href={linkTo}
-                className="text-sm text-orange-500 hover:text-orange-600 font-medium"
-            >
-                더보기 →
-            </Link>
+                <Link
+                    href={linkTo}
+                    className="text-sm text-orange-500 hover:text-orange-600 font-medium"
+                >
+                    실시간 글 더보기 →
+                </Link>
             )}
 
         </div>
@@ -477,7 +476,7 @@ export default function Home() {
                     <div className="space-y-8">
                         {/* 1시간 내 섹션 */}
                         <div>
-                            <SectionHeader title="커뮤니티 인기글 (3시간 이내)" linkTo="/hot" />
+                            <SectionHeader title="커뮤니티 인기글 (3시간 이내)" linkTo="/" />
                             <div className="space-y-4">
                                 {loading.latest ? (
                                     <div className="flex justify-center items-center py-8">
