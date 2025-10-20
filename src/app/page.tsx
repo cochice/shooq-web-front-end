@@ -1,72 +1,30 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
-import { ApiService, SiteBbsInfoMain } from '@/lib/api';
-import Link from 'next/link';
+import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
+import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS } from '@/constants/content';
+import { StorageUtils } from '@/utils/storage';
 
-// localStorage 키 상수
-const STORAGE_KEYS = {
-    THEME: 'shooq-theme',
-    NEW_WINDOW_MODE: 'shooq-newWindowMode',
-    SEARCH_KEYWORD: 'shooq-searchKeyword',
-    SORT_TYPE: 'shooq-sortType',
-    READ_POSTS: 'shooq-readPosts',
-    SHOW_UNREAD_ONLY: 'shooq-showUnreadOnly'
-} as const;
+function HomeContent() {
+    const searchParams = useSearchParams();
+    const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
+    const keywordParam = searchParams.get('keyword'); // GET 파라미터에서 keyword 값 가져오기
 
-// 성인 콘텐츠 감지 키워드 (추후 확장 가능)
-const ADULT_CONTENT_KEYWORDS = [
-    'ㅇㅎ', 'ㅎㅂ', '19금'
-] as const;
-
-// localStorage 유틸리티 함수
-const StorageUtils = {
-    getItem: (key: string, defaultValue: string = ''): string => {
-        if (typeof window === 'undefined') return defaultValue;
-        try {
-            return localStorage.getItem(key) || defaultValue;
-        } catch (error) {
-            console.warn(`Failed to read from localStorage key: ${key}`, error);
-            return defaultValue;
-        }
-    },
-
-    setItem: (key: string, value: string): void => {
-        if (typeof window === 'undefined') return;
-        try {
-            localStorage.setItem(key, value);
-        } catch (error) {
-            console.warn(`Failed to write to localStorage key: ${key}`, error);
-        }
-    }
-};
-
-export default function Home() {
+    const [posts, setPosts] = useState<SiteBbsInfo[]>([]);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalCount, setTotalCount] = useState(0);
+    const [loading, setLoading] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isNewWindowMode, setIsNewWindowMode] = useState(false);
-    const [sections, setSections] = useState({
-        latest: [] as SiteBbsInfoMain[],
-        threeHours: [] as SiteBbsInfoMain[],
-        nineHours: [] as SiteBbsInfoMain[],
-        oneDay: [] as SiteBbsInfoMain[]
-    });
-    const [loading, setLoading] = useState({
-        latest: false,
-        threeHours: false,
-        nineHours: false,
-        oneDay: false
-    });
     const [error, setError] = useState<string | null>(null);
+    // const [copyrightDisplay, setCopyrightDisplay] = useState<'full' | 'short' | 'hidden'>('full');
 
-    // 사이드바 관련 상태
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-
-    // 로딩바 상태
-    const [showTopLoadingBar, setShowTopLoadingBar] = useState(false);
-
-    // 헤더에서 필요한 상태들 추가
+    // 검색 상태
     const [searchKeyword, setSearchKeyword] = useState('');
     const [isSearchMode, setIsSearchMode] = useState(false);
     const searchKeywordRef = useRef('');
@@ -74,12 +32,56 @@ export default function Home() {
     // 읽은 글 관리
     const [readPosts, setReadPosts] = useState<Set<string>>(new Set());
 
+    // 정렬 드롭다운 상태
+    const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
+
+    // 로딩바 상태
+    const [showTopLoadingBar, setShowTopLoadingBar] = useState(false);
+
+    // 안 본 글만 보기 모드
+    const [showUnreadOnly, setShowUnreadOnly] = useState(false);
+
+    // 설정 로드 완료 상태
+    const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
+
+    // 설정 복원 진행 중 상태 (중복 API 호출 방지)
+    const [isRestoringSettings, setIsRestoringSettings] = useState(true);
+
+    // 초기 로드 완료 상태 (사용자의 필터 변경과 구분)
+    const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
+
+    // 로딩 상태를 ref로 관리하여 useCallback 의존성 문제 해결
+    const loadingRef = useRef(false);
+
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         return textarea.value;
     };
+
+    // 읽은 글 관리 함수들
+    const markPostAsRead = useCallback((postId: string) => {
+        setReadPosts(prev => {
+            const newSet = new Set(prev);
+            newSet.add(postId);
+            // localStorage에 저장 (최근 1000개만 유지)
+            const readPostsArray = Array.from(newSet).slice(-1000);
+            StorageUtils.setItem(STORAGE_KEYS.READ_POSTS, JSON.stringify(readPostsArray));
+            return new Set(readPostsArray);
+        });
+    }, []);
+
+    const isPostRead = useCallback((postId: string) => {
+        return readPosts.has(postId);
+    }, [readPosts]);
+
+    // 성인 콘텐츠 감지 함수
+    const hasAdultContent = useCallback((title?: string) => {
+        if (!title) return false;
+        return ADULT_CONTENT_KEYWORDS.some(keyword => title.includes(keyword));
+    }, []);
+
 
     // 날짜 포맷팅 함수
     const formatDate = (dateString?: string) => {
@@ -128,72 +130,175 @@ export default function Home() {
         return logoData[site as keyof typeof logoData] || { letter: '?', bgColor: 'rgb(107, 114, 128)', textColor: 'white' };
     };
 
-    // 읽은 글 관리 함수들
-    const markPostAsRead = useCallback((postId: string) => {
-        setReadPosts(prev => {
-            const newSet = new Set(prev);
-            newSet.add(postId);
-            // localStorage에 저장 (최근 1000개만 유지)
-            const readPostsArray = Array.from(newSet).slice(-1000);
-            StorageUtils.setItem(STORAGE_KEYS.READ_POSTS, JSON.stringify(readPostsArray));
-            return new Set(readPostsArray);
+
+    // 초기 데이터 로드
+    const loadInitialData = useCallback(async (searchQuery?: string, isInitialLoad = false) => {
+        // 이미 로딩 중인 경우 중복 호출 방지
+        if (loadingRef.current) {
+            console.log('🚫 Already loading, skipping duplicate call', { searchQuery, isInitialLoad });
+            return;
+        }
+
+        console.log('🚀 loadInitialData called', {
+            searchQuery,
+            isInitialLoad,
+            siteParam,
+            timestamp: new Date().toISOString(),
+            stack: new Error().stack?.split('\n')[1]?.trim()
         });
-    }, []);
 
-    const isPostRead = useCallback((postId: string) => {
-        return readPosts.has(postId);
-    }, [readPosts]);
-
-    // 성인 콘텐츠 감지 함수
-    const hasAdultContent = useCallback((title?: string) => {
-        if (!title) return false;
-        return ADULT_CONTENT_KEYWORDS.some(keyword => title.includes(keyword));
-    }, []);
-
-    // 모든 섹션 데이터를 한번에 로드하고 time_bucket으로 분류
-    const loadAllSectionsData = useCallback(async () => {
         try {
-            setLoading({
-                latest: true,
-                threeHours: true,
-                nineHours: true,
-                oneDay: true
-            });
+            loadingRef.current = true;
+            setLoading(true);
             setShowTopLoadingBar(true);
             setError(null);
 
-            const result = await ApiService.getMainPosts(
-                isSearchMode ? searchKeywordRef.current : undefined,
+            const postsResult = await ApiService.getPosts(
+                1,
+                10,
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
+                searchQuery,
                 undefined, // author
-                'n' // isNewsYn - 뉴스 제외
             );
 
-            // time_bucket 값에 따라 데이터 분류
-            const oneHourPosts = result.data.filter(post => post.time_bucket === '1h');
-            const threeHourPosts = result.data.filter(post => post.time_bucket === '3h');
-            const nineHourPosts = result.data.filter(post => post.time_bucket === '9h');
-            const oneDayPosts = result.data.filter(post => post.time_bucket === '24h');
+            setPosts(postsResult.data);
+            setCurrentPage(postsResult.page);
+            setTotalCount(postsResult.totalCount);
+            setHasMore(postsResult.hasNextPage);
 
-            setSections({
-                latest: oneHourPosts,      // 좌상단: 1h
-                threeHours: threeHourPosts, // 우상단: 3h
-                nineHours: nineHourPosts,   // 좌하단: 9h
-                oneDay: oneDayPosts         // 우하단: 24h
-            });
-
+            // 초기 로드 완료 표시
+            if (isInitialLoad && !initialLoadCompleted) {
+                setInitialLoadCompleted(true);
+            }
         } catch (error) {
-            console.error('메인 데이터 로드 실패:', error);
+            console.error('데이터 로드 실패:', error);
             setError('데이터를 불러오는데 실패했습니다. 백엔드 서버가 실행 중인지 확인해주세요.');
         } finally {
-            setLoading({
-                latest: false,
-                threeHours: false,
-                nineHours: false,
-                oneDay: false
-            });
+            loadingRef.current = false;
+            setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [isSearchMode]);
+    }, [siteParam]); // initialLoadCompleted 의존성 제거
+
+
+    // 더 많은 포스트 로드
+    const loadMorePosts = useCallback(async () => {
+        if (loading || !hasMore) {
+            return;
+        }
+
+        try {
+            setLoading(true);
+            if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+                setShowTopLoadingBar(true);
+            }
+
+            const result = await ApiService.getPosts(
+                currentPage + 1,
+                10,
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
+                isSearchMode ? searchKeywordRef.current : undefined,
+                undefined, // author
+            );
+
+            setPosts(prev => [...prev, ...result.data]);
+            setCurrentPage(result.page);
+            setHasMore(result.hasNextPage);
+        } catch (error) {
+            console.error('추가 포스트 로드 실패:', error);
+            setError('추가 데이터를 불러오는데 실패했습니다.');
+        } finally {
+            setLoading(false);
+            setShowTopLoadingBar(false);
+        }
+    }, [currentPage, loading, hasMore, isSearchMode, siteParam]);
+
+    // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
+    const handleHomeClick = () => {
+        // 즉시 스크롤 먼저 실행
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+
+        // 검색 필터 제거
+        handleClearSearch();
+
+        // 데이터 로드
+        loadInitialData();
+    };
+
+    // 검색 실행
+    const handleSearch = useCallback((keyword: string) => {
+        const trimmedKeyword = keyword.trim();
+        setSearchKeyword(trimmedKeyword);
+        searchKeywordRef.current = trimmedKeyword;
+        setIsSearchMode(!!trimmedKeyword);
+        setCurrentPage(1);
+        setPosts([]);
+
+        // localStorage에 검색 키워드 저장
+        if (trimmedKeyword) {
+            StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, trimmedKeyword);
+        } else {
+            StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
+        }
+
+        loadInitialData(trimmedKeyword || undefined);
+    }, [loadInitialData]);
+
+    // 검색 취소
+    const handleClearSearch = useCallback(() => {
+        setSearchKeyword('');
+        searchKeywordRef.current = '';
+        setIsSearchMode(false);
+        setCurrentPage(1);
+        setPosts([]);
+
+        // localStorage에서 검색 키워드 제거
+        StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
+
+        loadInitialData();
+    }, [loadInitialData]);
+
+    useEffect(() => {
+        // 쿼리 파라미터가 변경될 때마다 실행되지만, 초기 설정이 완료된 후에만 실행
+        // keywordParam이 있을 때는 초기 로드 useEffect에서 처리하므로 여기서는 실행하지 않음
+        if (isSettingsLoaded && !isRestoringSettings && !keywordParam) {
+            console.log('🔄 Site param useEffect triggered:', {
+                siteParam,
+                isSettingsLoaded,
+                isRestoringSettings,
+                keywordParam,
+                timestamp: new Date().toISOString()
+            });
+            loadInitialData();
+        }
+    }, [siteParam, isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam])
+
+    // 스크롤 이벤트 핸들러
+    useEffect(() => {
+        const handleScroll = () => {
+            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+            const windowHeight = window.innerHeight;
+            const documentHeight = document.documentElement.offsetHeight;
+
+            // 페이지 하단에서 800px 전에 로드 시작
+            if (scrollTop + windowHeight >= documentHeight - 800) {
+                loadMorePosts();
+            }
+        };
+
+        // 디바운싱을 위한 타이머
+        let timeoutId: NodeJS.Timeout;
+        const debouncedHandleScroll = () => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(handleScroll, 100);
+        };
+
+        window.addEventListener('scroll', debouncedHandleScroll, { passive: true });
+        return () => {
+            window.removeEventListener('scroll', debouncedHandleScroll);
+            clearTimeout(timeoutId);
+        };
+    }, [loadMorePosts]);
 
     // 다크 모드 토글
     const toggleDarkMode = () => {
@@ -215,45 +320,66 @@ export default function Home() {
     const toggleNewWindowMode = () => {
         const newWindowMode = !isNewWindowMode;
         setIsNewWindowMode(newWindowMode);
-        StorageUtils.setItem(STORAGE_KEYS.NEW_WINDOW_MODE, newWindowMode.toString());
+        StorageUtils.setBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, newWindowMode);
     };
 
-    // 헤더에서 사용할 핸들러들
-    const handleSearch = useCallback((keyword: string) => {
-        const trimmedKeyword = keyword.trim();
-        if (trimmedKeyword) {
-            // hot 페이지로 keyword 파라미터와 함께 이동
-            window.location.href = `/hot?keyword=${encodeURIComponent(trimmedKeyword)}`;
-        }
-    }, []);
-
-    const handleClearSearch = useCallback(() => {
-        setSearchKeyword('');
-        setIsSearchMode(false);
-    }, []);
-
-
-    const handleHomeClick = () => {
-        // 홈으로 이동하거나 페이지 새로고침 로직
-        loadAllSectionsData();
+    // 안 본 글만 보기 토글
+    const toggleUnreadOnly = () => {
+        const newShowUnreadOnly = !showUnreadOnly;
+        setShowUnreadOnly(newShowUnreadOnly);
+        StorageUtils.setBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, newShowUnreadOnly);
     };
 
-    // 사이드바 네비게이션 함수 (검색 상태 초기화 포함)
+    // 공통 리프레시 함수 - URL로 강제 이동 (검색 초기화 포함)
     const refreshPage = (href: string) => {
         // 사이드바 네비게이션 시 검색 상태 초기화
         StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, '');
         window.location.href = href;
     };
 
-    // 설정 복원 및 초기 데이터 로드
+    // 컴포넌트 마운트 시 데이터 로드
+    const isInitialLoadRef = useRef<boolean>(false);
+
     useEffect(() => {
+        if (isSettingsLoaded && !isRestoringSettings && !isInitialLoadRef.current) {
+            console.log('🎯 Initial load useEffect triggered:', {
+                isSettingsLoaded,
+                isRestoringSettings,
+                isInitialLoadRef: isInitialLoadRef.current,
+                keywordParam,
+                timestamp: new Date().toISOString()
+            });
+            // URL 파라미터에서 받은 keyword 우선 사용
+            const searchKeywordToUse = keywordParam || (isSearchMode ? searchKeywordRef.current : undefined);
+            console.log('🔍 Initial load with keyword:', { keywordParam, searchKeywordToUse, isSearchMode });
+            loadInitialData(searchKeywordToUse, true); // isInitialLoad = true
+            isInitialLoadRef.current = true;
+        }
+    }, [isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam, isSearchMode]);
+
+    // 설정 복원 함수
+    const restoreSettings = useCallback(() => {
         if (typeof window === 'undefined') return;
 
-        // 다크 모드 설정 복원
+        // 다크 모드 설정
         const savedTheme = StorageUtils.getItem(STORAGE_KEYS.THEME);
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const shouldUseDarkMode = savedTheme ? savedTheme === 'dark' : prefersDark;
 
+        // 새창 모드 설정
+        const savedNewWindowMode = StorageUtils.getBoolean(STORAGE_KEYS.NEW_WINDOW_MODE, false);
+
+        // 검색 키워드 복원 (URL 파라미터 우선, 그 다음 localStorage)
+        const urlKeyword = keywordParam;
+        const savedSearchKeyword = urlKeyword || StorageUtils.getItem(STORAGE_KEYS.SEARCH_KEYWORD);
+
+        // 읽은 글 목록 복원
+        const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
+
+        // 안 본 글만 보기 설정 복원
+        const savedShowUnreadOnly = StorageUtils.getBoolean(STORAGE_KEYS.SHOW_UNREAD_ONLY, false);
+
+        // 상태 일괄 업데이트
         setIsDarkMode(shouldUseDarkMode);
         if (shouldUseDarkMode) {
             document.documentElement.classList.add('dark');
@@ -261,12 +387,19 @@ export default function Home() {
             document.documentElement.classList.remove('dark');
         }
 
-        // 새창 모드 설정 복원
-        const savedNewWindowMode = StorageUtils.getItem(STORAGE_KEYS.NEW_WINDOW_MODE) === 'true';
         setIsNewWindowMode(savedNewWindowMode);
 
-        // 읽은 글 목록 복원
-        const savedReadPosts = StorageUtils.getItem(STORAGE_KEYS.READ_POSTS);
+        if (savedSearchKeyword) {
+            setSearchKeyword(savedSearchKeyword);
+            searchKeywordRef.current = savedSearchKeyword;
+            setIsSearchMode(true);
+
+            // URL 파라미터로 받은 키워드는 localStorage에도 저장
+            if (urlKeyword) {
+                StorageUtils.setItem(STORAGE_KEYS.SEARCH_KEYWORD, urlKeyword);
+            }
+        }
+
         if (savedReadPosts) {
             try {
                 const readPostsArray = JSON.parse(savedReadPosts);
@@ -278,162 +411,47 @@ export default function Home() {
             }
         }
 
-        // 각 섹션 데이터 로드
-        loadAllSectionsData();
-    }, [loadAllSectionsData]);
+        setShowUnreadOnly(savedShowUnreadOnly);
 
-    // PostCard 컴포넌트 (hot 페이지와 동일한 디자인)
-    const PostCard = ({ post, index }: { post: SiteBbsInfoMain; index: number }) => {
-        const postId = `${post.site}-${post.no}`;
-        const isRead = isPostRead(postId);
-        const isAdultContent = hasAdultContent(post.title);
+        // 페이지 접속 로그 기록
+        ApiService.logAccess().then(() => {
+            console.log('Access logged successfully');
+        }).catch((error) => {
+            console.warn('Failed to log access:', error);
+        });
 
-        return (
-            <article key={`post-${post.no}-${index}`} className={`rounded-lg border transition-colors ${isRead
-                ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
-                : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-            }`}>
-                <div className="p-4">
-                    <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-                        {post.site && (
-                            <>
-                                <div className="flex items-center space-x-2">
-                                    <div
-                                        className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                                        style={{
-                                            backgroundColor: getSiteLogo(post.site).bgColor,
-                                            color: getSiteLogo(post.site).textColor
-                                        }}
-                                    >
-                                        {getSiteLogo(post.site).letter}
-                                    </div>
-                                    <span className="font-semibold">{post.site}</span>
-                                </div>
-                                <span className="mx-1">•</span>
-                            </>
-                        )}
-                        {post.author && (
-                            <>
-                                <span>Posted by {post.author}</span>
-                                <span className="mx-1">•</span>
-                            </>
-                        )}
-                        <span>{formatDate(post.date)}</span>
-                    </div>
+        // 설정 복원 완료 표시
+        setIsRestoringSettings(false);
+        setIsSettingsLoaded(true);
+    }, [keywordParam]);
 
-                    {post.url ? (
-                        <a
-                            href={post.url}
-                            target={isNewWindowMode ? "_blank" : "_self"}
-                            rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                            className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                                }`}
-                            onClick={() => markPostAsRead(postId)}
-                        >
-                            {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                            {isNewWindowMode && (
-                                <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg>
-                            )}
-                        </a>
-                    ) : (
-                        <h2 className={`text-lg font-semibold mb-2 ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                            }`}>
-                            {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                        </h2>
-                    )}
+    // 초기 설정 복원
+    useEffect(() => {
+        restoreSettings();
+    }, [restoreSettings]);
 
-                    {post.content && (
-                        <p className={`text-sm mb-3 ${isRead ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'
-                            }`}>
-                            {post.url ? (
-                                <a
-                                    href={post.url}
-                                    target={isNewWindowMode ? "_blank" : "_self"}
-                                    rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                                    className="hover:text-orange-500 cursor-pointer"
-                                    onClick={() => markPostAsRead(postId)}
-                                >
-                                    {post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)}
-                                </a>
-                            ) : (
-                                post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
-                            )}
-                        </p>
-                    )}
+    // 드롭다운 외부 클릭 시 닫기
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (isSortDropdownOpen && !(event.target as Element).closest('.issue-dropdown')) {
+                setIsSortDropdownOpen(false);
+            }
+        };
 
-                    {post.cloudinary_url && (
-                        <div className="mb-3">
-                            <img
-                                src={post.cloudinary_url}
-                                alt="첨부 이미지"
-                                className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${
-                                    isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                }`}
-                                loading="lazy"
-                                onError={(e) => {
-                                    const target = e.target as HTMLImageElement;
-                                    target.style.display = 'none';
-                                }}
-                            />
-                        </div>
-                    )}
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isSortDropdownOpen]);
 
-                    <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                        {post.likes && (
-                            <div className="flex items-center space-x-1 px-2 py-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                <span className="hidden sm:inline">{post.likes} 추천</span>
-                                <span className="sm:hidden">{post.likes}</span>
-                            </div>
-                        )}
-                        {post.reply_num && (
-                            <div className="flex items-center space-x-1 px-2 py-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                </svg>
-                                <span className="hidden sm:inline">{post.reply_num} 답글</span>
-                                <span className="sm:hidden">{post.reply_num}</span>
-                            </div>
-                        )}
-                        {post.views && (
-                            <div className="flex items-center space-x-1 px-2 py-1">
-                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span className="hidden sm:inline">{post.views} 조회</span>
-                                <span className="sm:hidden">{post.views}</span>
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </article>
-        );
-    };
-
-    // 섹션 헤더 컴포넌트
-    const SectionHeader = ({ title, linkTo }: { title: string; linkTo: string }) => (
-        <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">{title}</h2>
-            
-            {linkTo && (
-            <Link
-                href={linkTo}
-                className="text-sm text-orange-500 hover:text-orange-600 font-medium"
-            >
-                더보기 →
-            </Link>
-            )}
-
-        </div>
-    );
+    // 백엔드에서 필터링된 포스트를 받고, 클라이언트에서 안 본 글 필터링
+    const filteredPosts = showUnreadOnly
+        ? posts.filter(post => !isPostRead(`${post.site}-${post.no}`))
+        : posts;
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="min-h-screen bg-white dark:bg-gray-900">
+
             {/* Global styles for loading animation */}
             <style dangerouslySetInnerHTML={{
                 __html: `
@@ -477,6 +495,8 @@ export default function Home() {
                 onSearch={handleSearch}
                 onClearSearch={handleClearSearch}
                 isSearchMode={isSearchMode}
+                showUnreadOnly={showUnreadOnly}
+                onToggleUnreadOnly={toggleUnreadOnly}
                 isNewWindowMode={isNewWindowMode}
                 onToggleNewWindowMode={toggleNewWindowMode}
                 onHomeClick={handleHomeClick}
@@ -496,10 +516,29 @@ export default function Home() {
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">
+                    {/* Page Title */}
+                    <div className="mb-6">
+                        <h1
+                            className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer"
+                            onClick={() => {
+                                // 상태 초기화 후 데이터 다시 로드
+                                setPosts([]);
+                                setCurrentPage(1);
+                                setHasMore(true);
+                                setError(null);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                loadInitialData(undefined, true);
+                            }}
+                        >
+                            커뮤니티 인기글 (핫이슈){siteParam ? ` - ${siteParam}` : ''}
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">인기 커뮤니티의 최신 이슈를 확인하세요</p>
+                    </div>
+
                     {/* Error Message */}
                     {error && (
-                        <div className="mb-4">
-                            <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
+                        <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4 mb-4">
+                            <div className="flex">
                                 <div className="text-red-800 dark:text-red-200">
                                     <p className="font-medium">오류 발생</p>
                                     <p className="text-sm mt-1">{error}</p>
@@ -508,74 +547,239 @@ export default function Home() {
                         </div>
                     )}
 
-                    {/* Posts by Time Sections */}
-                    <div className="space-y-8">
-                        {/* 1시간 내 섹션 */}
-                        <div>
-                            <SectionHeader title="커뮤니티 인기글 (3시간 이내)" linkTo="/hot" />
-                            <div className="space-y-4">
-                                {loading.latest ? (
-                                    <div className="flex justify-center items-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                    </div>
-                                ) : (
-                                    sections.latest.map((post, index) => (
-                                        <PostCard key={`1h-${post.site}-${post.no}-${index}`} post={post} index={index} />
-                                    ))
-                                )}
+                    {/* Search Status */}
+                    {isSearchMode && (
+                        <div className="mb-4 p-3 bg-blue-50 dark:bg-blue-900 rounded-lg border border-blue-200 dark:border-blue-700">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-blue-800 dark:text-blue-200 font-medium">
+                                        검색 결과: &quot;{searchKeyword}&quot;
+                                    </p>
+                                    <p className="text-blue-600 dark:text-blue-300 text-sm mt-1">
+                                        총 {totalCount}개의 게시물이 검색되었습니다.
+                                    </p>
+                                </div>
+                                <button
+                                    onClick={handleClearSearch}
+                                    className="text-blue-600 dark:text-blue-300 hover:text-blue-800 dark:hover:text-blue-100 text-sm underline"
+                                >
+                                    검색 취소
+                                </button>
                             </div>
                         </div>
+                    )}
 
-                        {/* 3시간 내 섹션 */}
-                        <div>
-                            <SectionHeader title="커뮤니티 인기글 (6시간 이내)" linkTo="" />
-                            <div className="space-y-4">
-                                {loading.threeHours ? (
-                                    <div className="flex justify-center items-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                    </div>
-                                ) : (
-                                    sections.threeHours.map((post, index) => (
-                                        <PostCard key={`3h-${post.site}-${post.no}-${index}`} post={post} index={index} />
-                                    ))
-                                )}
+                    {/* Loading Initial Data */}
+                    {loading && posts.length === 0 && !searchKeyword && (
+                        <div className="flex justify-center items-center py-8">
+                            {/* PC에서는 상단 로딩바를 사용하므로 로딩 애니메이션 숨김 */}
+                            <div className="lg:hidden">
+                                <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                            </div>
+                            {/* PC에서만 표시되는 간단한 텍스트 */}
+                            <div className="hidden lg:block text-center">
+                                <p className="text-gray-500 dark:text-gray-400">데이터를 불러오는 중...</p>
                             </div>
                         </div>
+                    )}
 
-                        {/* 9시간 내 섹션 */}
-                        <div>
-                            <SectionHeader title="커뮤니티 인기글 (9시간 이내)" linkTo="" />
-                            <div className="space-y-4">
-                                {loading.nineHours ? (
-                                    <div className="flex justify-center items-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
-                                    </div>
-                                ) : (
-                                    sections.nineHours.map((post, index) => (
-                                        <PostCard key={`9h-${post.site}-${post.no}-${index}`} post={post} index={index} />
-                                    ))
-                                )}
+                    {/* Loading Search Results */}
+                    {loading && posts.length === 0 && isSearchMode && (
+                        <div className="flex justify-center items-center py-8">
+                            {/* 모바일에서는 기존 애니메이션 사용 */}
+                            <div className="lg:hidden">
+                                <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
+                            </div>
+                            {/* PC에서는 간단한 텍스트 */}
+                            <div className="hidden lg:block text-center">
+                                <p className="text-gray-500 dark:text-gray-400">검색 중...</p>
                             </div>
                         </div>
+                    )}
 
-                        {/* 24시간 내 섹션 */}
-                        <div>
-                            <SectionHeader title="커뮤니티 인기글 (24시간 이내)" linkTo="" />
-                            <div className="space-y-4">
-                                {loading.oneDay ? (
-                                    <div className="flex justify-center items-center py-8">
-                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                    {/* Posts */}
+                    <div className="space-y-4">
+                        {filteredPosts.map((post, index) => {
+                            const postId = `${post.site}-${post.no}`;
+                            const isRead = isPostRead(postId);
+                            const isAdultContent = hasAdultContent(post.title);
+
+                            return (
+                                <article key={`post-${post.no}-${index}`} className={`rounded-lg border transition-colors ${isRead
+                                    ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
+                                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                                    }`}>
+                                    <div className="p-4">
+                                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                            {post.site && (
+                                                <>
+                                                    <div className="flex items-center space-x-2">
+                                                        <div
+                                                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                            style={{
+                                                                backgroundColor: getSiteLogo(post.site).bgColor,
+                                                                color: getSiteLogo(post.site).textColor
+                                                            }}
+                                                        >
+                                                            {getSiteLogo(post.site).letter}
+                                                        </div>
+                                                        <span className="font-semibold">{post.site}</span>
+                                                    </div>
+                                                    <span className="mx-1">•</span>
+                                                </>
+                                            )}
+                                            {post.author && (
+                                                <>
+                                                    <span>Posted by {post.author}</span>
+                                                    <span className="mx-1">•</span>
+                                                </>
+                                            )}
+                                            <span>{formatDate(post.date)}</span>
+                                        </div>
+
+                                        {post.url ? (
+                                            <a
+                                                href={post.url}
+                                                target={isNewWindowMode ? "_blank" : "_self"}
+                                                rel={isNewWindowMode ? "noopener noreferrer" : undefined}
+                                                className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                                    }`}
+                                                onClick={() => markPostAsRead(postId)}
+                                            >
+                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                                {isNewWindowMode && (
+                                                    <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                )}
+                                            </a>
+                                        ) : (
+                                            <h2 className={`text-lg font-semibold mb-2 ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                                }`}>
+                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                            </h2>
+                                        )}
+
+                                        {post.content && (
+                                            <p className={`text-sm mb-3 ${isRead ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'
+                                                }`}>
+                                                {post.url ? (
+                                                    <a
+                                                        href={post.url}
+                                                        target={isNewWindowMode ? "_blank" : "_self"}
+                                                        rel={isNewWindowMode ? "noopener noreferrer" : undefined}
+                                                        className="hover:text-orange-500 cursor-pointer"
+                                                        onClick={() => markPostAsRead(postId)}
+                                                    >
+                                                        {post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)}
+                                                    </a>
+                                                ) : (
+                                                    post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
+                                                )}
+                                            </p>
+                                        )}
+
+                                        {post.cloudinary_url && (
+                                            <div className="mb-3">
+                                                <img
+                                                    src={post.cloudinary_url}
+                                                    alt="첨부 이미지"
+                                                    className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${
+                                                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                    }`}
+                                                    loading="lazy"
+                                                    onError={(e) => {
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                    }}
+                                                />
+                                            </div>
+                                        )}
+
+                                        <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                                            {post.likes && (
+                                                <div className="flex items-center space-x-1 px-2 py-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                    </svg>
+                                                    <span className="hidden sm:inline">{post.likes} 추천</span>
+                                                    <span className="sm:hidden">{post.likes}</span>
+                                                </div>
+                                            )}
+                                            {post.reply_num && (
+                                                <div className="flex items-center space-x-1 px-2 py-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                    </svg>
+                                                    <span className="hidden sm:inline">{post.reply_num} 답글</span>
+                                                    <span className="sm:hidden">{post.reply_num}</span>
+                                                </div>
+                                            )}
+                                            {post.views && (
+                                                <div className="flex items-center space-x-1 px-2 py-1">
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                    </svg>
+                                                    <span className="hidden sm:inline">{post.views} 조회</span>
+                                                    <span className="sm:hidden">{post.views}</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                ) : (
-                                    sections.oneDay.map((post, index) => (
-                                        <PostCard key={`24h-${post.site}-${post.no}-${index}`} post={post} index={index} />
-                                    ))
-                                )}
-                            </div>
-                        </div>
+                                </article>
+                            );
+                        })}
                     </div>
+
+                    {/* Loading More Posts */}
+                    {loading && posts.length > 0 && (
+                        <div className="flex justify-center items-center py-8">
+                            {/* 모바일에서는 스피너와 텍스트 표시 */}
+                            <div className="lg:hidden flex items-center">
+                                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
+                                <span className="ml-3 text-gray-600 dark:text-gray-400">새로운 포스트를 불러오는 중...</span>
+                            </div>
+                            {/* PC에서는 상단 로딩바가 있으므로 간단한 텍스트만 */}
+                            <div className="hidden lg:block text-center">
+                                <p className="text-gray-500 dark:text-gray-400 text-sm">추가 게시물 로딩 중...</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* End of Posts Message */}
+                    {!hasMore && posts.length > 0 && (
+                        <div className="text-center py-8">
+                            <p className="text-gray-500 dark:text-gray-400">
+                                모든 포스트를 확인했습니다! (총 {totalCount}개)
+                            </p>
+                        </div>
+                    )}
+
+                    {/* No Posts Message */}
+                    {/* {!loading && posts.length === 0 && !error && (
+                        <div className="text-center py-8">
+                            <p className="text-gray-500 dark:text-gray-400">아직 포스트가 없습니다.</p>
+                        </div>
+                    )} */}
+
                 </main>
             </div>
+
         </div>
+    );
+}
+
+export default function Home() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen bg-white dark:bg-gray-900">
+                <div className="flex justify-center items-center py-8">
+                    <p className="text-gray-500 dark:text-gray-400">Loading...</p>
+                </div>
+            </div>
+        }>
+            <HomeContent />
+        </Suspense>
     );
 }

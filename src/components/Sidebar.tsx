@@ -94,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="font-medium">홈</span>
                                 </button>
 
-                                {/* 핫이슈 버튼 */}
+                                {/* 오늘의 핫이슈 버튼 */}
                                 <button
                                     type="button"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
@@ -106,7 +106,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
-                                    <span className="font-medium">핫이슈</span>
+                                    <span className="font-medium">오늘의 핫이슈</span>
                                 </button>
 
                                 {/* 주간집계 버튼 */}
@@ -207,7 +207,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <span className="font-medium">홈</span>
                         </button>
 
-                        {/* 핫이슈 버튼 */}
+                        {/* 오늘의 핫이슈 버튼 */}
                         <button
                             type="button"
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
@@ -219,7 +219,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                             </svg>
-                            <span className="font-medium">핫이슈</span>
+                            <span className="font-medium">오늘의 핫이슈</span>
                         </button>
 
                         {/* 주간집계 버튼 */}
