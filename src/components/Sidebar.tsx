@@ -279,7 +279,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                             type="button"
                                             className="flex items-center space-x-3 w-full px-2 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                             onClick={() => {
-                                                onNavigate?.(`/hot?site=${site.code}`);
+                                                onNavigate?.(`/?site=${site.code}`);
                                                 onCloseSidebar?.();
                                             }}
                                         >
