@@ -5,7 +5,8 @@ import { ApiService, SiteBbsInfoMain } from '@/lib/api';
 import Link from 'next/link';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS } from '@/constants/content';
+import YouTubeVideo from '@/components/YouTubeVideo';
+import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
 export default function Home() {
@@ -69,29 +70,6 @@ export default function Home() {
         }
     };
 
-    // 사이트별 로고 문자 및 색상 가져오기
-    const getSiteLogo = (site?: string) => {
-        const logoData = {
-            'FMKorea': { letter: 'F', bgColor: 'rgb(62, 97, 197)', textColor: 'white' },
-            'Humoruniv': { letter: 'H', bgColor: 'rgb(219, 23, 55)', textColor: 'white' },
-            'TheQoo': { letter: 'T', bgColor: 'rgb(42, 65, 95)', textColor: 'white' },
-            'NaverNews': { letter: 'N', bgColor: 'rgb(40, 181, 78)', textColor: 'white' },
-            'Ppomppu': { letter: 'P', bgColor: 'rgb(199, 199, 199)', textColor: 'rgb(75, 85, 99)' },
-            'GoogleNews': { letter: 'G', bgColor: 'rgb(53, 112, 255)', textColor: 'white' },
-            'Clien': { letter: 'C', bgColor: 'rgb(25, 36, 125)', textColor: 'white' },
-            'TodayHumor': { letter: 'T', bgColor: 'rgb(255, 255, 255)', textColor: 'rgb(75, 85, 99)' },
-            'SLRClub': { letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
-            'SlrClub': { letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
-            'Ruliweb': { letter: 'R', bgColor: 'rgb(255, 102, 0)', textColor: 'white' },
-            '82Cook': { letter: '8', bgColor: 'rgb(230, 230, 230)', textColor: 'rgb(75, 85, 99)' },
-            'MlbPark': { letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
-            'BobaeDream': { letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
-            'Inven': { letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
-            'Damoang': { letter: 'D', bgColor: 'rgb(138, 43, 226)', textColor: 'white' },
-        } as const;
-
-        return logoData[site as keyof typeof logoData] || { letter: '?', bgColor: 'rgb(107, 114, 128)', textColor: 'white' };
-    };
 
     // 읽은 글 관리 함수들
     const markPostAsRead = useCallback((postId: string) => {
@@ -328,7 +306,15 @@ export default function Home() {
                         </p>
                     )}
 
-                    {post.cloudinary_url && (
+                    {/* YouTube 비디오 또는 일반 이미지 렌더링 */}
+                    {post.site === 'YouTube' && post.url ? (
+                        <div className="mb-3">
+                            <YouTubeVideo
+                                url={post.url}
+                                className={isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''}
+                            />
+                        </div>
+                    ) : post.cloudinary_url && (
                         <div className="mb-3">
                             <img
                                 src={post.cloudinary_url}

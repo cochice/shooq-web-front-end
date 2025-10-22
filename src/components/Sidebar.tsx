@@ -1,6 +1,7 @@
 'use client';
 
 import React from 'react';
+import { SITE_CATEGORIES } from '@/constants/content';
 
 interface SidebarProps {
     isSidebarOpen?: boolean;
@@ -24,30 +25,8 @@ Humoruniv, 9
 SlrClub, 11
 Damoang, 12
 TodayHumor, 13
+YouTube, 14
 */
-
-// 하드코딩된 사이트 목록
-const HARDCODED_SITES = {
-    news: [
-        { code: 'NaverNews', name: 'NaverNews', letter: 'N', bgColor: 'rgb(40, 181, 78)', textColor: 'white' },
-        { code: 'GoogleNews', name: 'GoogleNews', letter: 'G', bgColor: 'rgb(53, 112, 255)', textColor: 'white' }
-    ],
-    community: [
-        { code: 'Humoruniv', name: 'Humoruniv', letter: 'H', bgColor: 'rgb(219, 23, 55)', textColor: 'white' },
-        { code: 'TheQoo', name: 'TheQoo', letter: 'T', bgColor: 'rgb(42, 65, 95)', textColor: 'white' },
-        { code: 'Ppomppu', name: 'Ppomppu', letter: 'P', bgColor: 'rgb(199, 199, 199)', textColor: 'rgb(75, 85, 99)' },
-        { code: 'Clien', name: 'Clien', letter: 'C', bgColor: 'rgb(25, 36, 125)', textColor: 'white' },
-        { code: 'TodayHumor', name: 'TodayHumor', letter: 'T', bgColor: 'rgb(255, 255, 255)', textColor: 'rgb(75, 85, 99)' },
-        { code: 'SlrClub', name: 'SlrClub', letter: 'S', bgColor: 'rgb(66, 116, 175)', textColor: 'white' },
-        { code: 'Ruliweb', name: 'Ruliweb', letter: 'R', bgColor: 'rgb(255, 102, 0)', textColor: 'white' },
-        { code: '82Cook', name: '82Cook', letter: '8', bgColor: 'rgb(230, 230, 230)', textColor: 'rgb(75, 85, 99)' },
-        { code: 'BobaeDream', name: 'BobaeDream', letter: 'B', bgColor: 'rgb(16, 90, 174)', textColor: 'white' },
-        { code: 'Inven', name: 'Inven', letter: 'I', bgColor: 'rgb(240, 255, 255)', textColor: 'rgb(239, 68, 68)' },
-        { code: 'Damoang', name: 'Damoang', letter: 'D', bgColor: 'rgb(138, 43, 226)', textColor: 'white' },
-        { code: 'FMKorea', name: 'FMKorea', letter: 'F', bgColor: 'rgb(62, 97, 197)', textColor: 'white' },
-        { code: 'MlbPark', name: 'MlbPark', letter: 'M', bgColor: 'rgb(65, 106, 220)', textColor: 'white' },
-    ]
-};
 
 const Sidebar: React.FC<SidebarProps> = ({
     isSidebarOpen,
@@ -149,10 +128,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     {/* 커뮤니티 섹션 */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
-                                            <h3 className="font-semibold text-gray-300">커뮤니티 ({HARDCODED_SITES.community.length}개)</h3>
+                                            <h3 className="font-semibold text-gray-300">커뮤니티 ({SITE_CATEGORIES.community.length}개)</h3>
                                         </div>
                                         <div className="space-y-2">
-                                            {HARDCODED_SITES.community.map((site) => (
+                                            {SITE_CATEGORIES.community.map((site) => (
                                                 <button
                                                     key={site.code}
                                                     type="button"
@@ -270,10 +249,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {/* 커뮤니티 섹션 */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">커뮤니티 ({HARDCODED_SITES.community.length}개)</h3>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white">커뮤니티 ({SITE_CATEGORIES.community.length}개)</h3>
                                 </div>
                                 <div className="space-y-2">
-                                    {HARDCODED_SITES.community.map((site) => (
+                                    {SITE_CATEGORIES.community.map((site) => (
                                         <button
                                             key={site.code}
                                             type="button"
