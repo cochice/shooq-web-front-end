@@ -137,7 +137,7 @@ const Sidebar: React.FC<SidebarProps> = ({
                                                     type="button"
                                                     className="flex items-center space-x-3 w-full px-2 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
                                                     onClick={() => {
-                                                        onNavigate?.(`/hot?site=${site.code}`);
+                                                        onNavigate?.(`/?site=${site.code}`);
                                                         onCloseSidebar?.();
                                                     }}
                                                 >
