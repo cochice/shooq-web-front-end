@@ -14,12 +14,12 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
     title: {
-        default: "커뮤니티 인기글 | Shooq – 라이브 이슈",
-        template: "%s | Shooq"
+        default: "슉라이브 | 커뮤니티 인기글 - Shooq.live",
+        template: "%s | 슉라이브"
     },
-    description: "커뮤니티 인기글 모음 사이트 슉(Shooq) - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼. 에펨코리아, 유머대학, 더쿠 등 주요 커뮤니티의 HOT 게시물을 실시간으로 확인하세요.",
+    description: "슉라이브 | 커뮤니티 인기글 - Shooq.live 커뮤니티 인기글 모음 사이트 - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼. 에펨코리아, 유머대학, 더쿠 등 주요 커뮤니티의 HOT 게시물을 실시간으로 확인하세요.",
     keywords: ["커뮤니티 인기글", "커뮤니티 인기글 모음 사이트", "슉", "shooq", "커뮤니티", "실시간", "인기글", "핫이슈", "에펨코리아", "유머대학", "더쿠", "루리웹", "클리앙", "커뮤니티 모음", "인기글 모음"],
-    authors: [{ name: "Shooq Team" }],
+    authors: [{ name: "슉라이브 Team" }],
     creator: "Shooq",
     publisher: "Shooq, Inc.",
     formatDetection: {
@@ -39,21 +39,21 @@ export const metadata: Metadata = {
         type: 'website',
         locale: 'ko_KR',
         url: '/',
-        title: '커뮤니티 인기글 | Shooq – 라이브 이슈',
+        title: '슉라이브 | 커뮤니티 인기글 - Shooq.live',
         description: '커뮤니티 인기글 모음 사이트 - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼',
-        siteName: 'Shooq',
+        siteName: '슉라이브',
         images: [
             {
                 url: `${process.env.NEXT_PUBLIC_SITE_URL || 'https://shooq.live'}/shooq.png`,
                 width: 1200,
                 height: 630,
-                alt: 'Shooq – 라이브 이슈',
+                alt: '슉라이브 | 커뮤니티 인기글 - Shooq.live',
             },
         ],
     },
     twitter: {
         card: 'summary_large_image',
-        title: '커뮤니티 인기글 | Shooq – 라이브 이슈',
+        title: '슉라이브 | 커뮤니티 인기글 - Shooq.live',
         description: '커뮤니티 인기글 모음 사이트 - 실시간 인기 게시물과 최신 이슈를 한눈에 모아보는 커뮤니티 플랫폼',
         creator: '@shooq_official',
         images: [`${process.env.NEXT_PUBLIC_SITE_URL || 'https://shooq.live'}/shooq.png`],
