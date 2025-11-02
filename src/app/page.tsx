@@ -6,6 +6,7 @@ import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
+import ImageCarousel from '@/components/ImageCarousel';
 import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
@@ -550,28 +551,14 @@ function HomeContent() {
                     {/* Loading Initial Data */}
                     {loading && posts.length === 0 && !searchKeyword && (
                         <div className="flex justify-center items-center py-8">
-                            {/* PC에서는 상단 로딩바를 사용하므로 로딩 애니메이션 숨김 */}
-                            <div className="lg:hidden">
-                                <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
-                            </div>
-                            {/* PC에서만 표시되는 간단한 텍스트 */}
-                            <div className="hidden lg:block text-center">
-                                <p className="text-gray-500 dark:text-gray-400">데이터를 불러오는 중...</p>
-                            </div>
+                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
                         </div>
                     )}
 
                     {/* Loading Search Results */}
                     {loading && posts.length === 0 && isSearchMode && (
                         <div className="flex justify-center items-center py-8">
-                            {/* 모바일에서는 기존 애니메이션 사용 */}
-                            <div className="lg:hidden">
-                                <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
-                            </div>
-                            {/* PC에서는 간단한 텍스트 */}
-                            <div className="hidden lg:block text-center">
-                                <p className="text-gray-500 dark:text-gray-400">검색 중...</p>
-                            </div>
+                            <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
                         </div>
                     )}
 
@@ -587,7 +574,8 @@ function HomeContent() {
                                     ? 'bg-gray-50 dark:bg-gray-900 border-gray-100 dark:border-gray-800 hover:border-gray-200 dark:hover:border-gray-700'
                                     : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
                                     }`}>
-                                    <div className="p-4">
+                                    <div className="p-4 flex flex-col items-center">
+                                        <div className="w-full max-w-3xl">
                                         <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
                                             {post.site && (
                                                 <>
@@ -657,7 +645,7 @@ function HomeContent() {
                                             </p>
                                         )}
 
-                                        {/* YouTube 비디오 또는 일반 이미지 렌더링 */}
+                                        {/* YouTube 비디오 또는 이미지 캐러셀 */}
                                         {post.site === 'YouTube' && post.url ? (
                                             <div className="mb-3">
                                                 <YouTubeVideo
@@ -665,20 +653,28 @@ function HomeContent() {
                                                     className={isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''}
                                                 />
                                             </div>
+                                        ) : (post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
+                                            <ImageCarousel
+                                                images={post.optimizedImagesList}
+                                                isAdultContent={isAdultContent}
+                                                title={post.title}
+                                            />
                                         ) : post.cloudinary_url && (
                                             <div className="mb-3">
-                                                <img
-                                                    src={post.cloudinary_url}
-                                                    alt="첨부 이미지"
-                                                    className={`max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700 ${
-                                                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                                    }`}
-                                                    loading="lazy"
-                                                    onError={(e) => {
-                                                        const target = e.target as HTMLImageElement;
-                                                        target.style.display = 'none';
-                                                    }}
-                                                />
+                                                <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                    <img
+                                                        src={post.cloudinary_url}
+                                                        alt="썸네일"
+                                                        className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${
+                                                            isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                        }`}
+                                                        loading="lazy"
+                                                        onError={(e) => {
+                                                            const target = e.target as HTMLImageElement;
+                                                            target.style.display = 'none';
+                                                        }}
+                                                    />
+                                                </div>
                                             </div>
                                         )}
 
@@ -712,6 +708,7 @@ function HomeContent() {
                                                 </div>
                                             )}
                                         </div>
+                                        </div>
                                     </div>
                                 </article>
                             );
@@ -721,14 +718,9 @@ function HomeContent() {
                     {/* Loading More Posts */}
                     {loading && posts.length > 0 && (
                         <div className="flex justify-center items-center py-8">
-                            {/* 모바일에서는 스피너와 텍스트 표시 */}
-                            <div className="lg:hidden flex items-center">
+                            <div className="flex items-center">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500"></div>
                                 <span className="ml-3 text-gray-600 dark:text-gray-400">새로운 포스트를 불러오는 중...</span>
-                            </div>
-                            {/* PC에서는 상단 로딩바가 있으므로 간단한 텍스트만 */}
-                            <div className="hidden lg:block text-center">
-                                <p className="text-gray-500 dark:text-gray-400 text-sm">추가 게시물 로딩 중...</p>
                             </div>
                         </div>
                     )}

@@ -1,6 +1,12 @@
 const API_BASE_URL = 'https://shooq-web-back-end.onrender.com/api';
 //const API_BASE_URL = 'https://localhost:7183/api';
 
+export interface OptimizedImages {
+  id: number;
+  cloudinary_url?: string;
+  no?: number;
+}
+
 export interface SiteBbsInfo {
   no: number;
   number?: number;
@@ -17,6 +23,7 @@ export interface SiteBbsInfo {
   posted_dt?: Date;
   gubun?: string;
   cloudinary_url?: string;
+  optimizedImagesList?: OptimizedImages[];
 }
 
 export interface SiteBbsInfoMain {
@@ -36,6 +43,7 @@ export interface SiteBbsInfoMain {
   time_bucket?: string;
   score?: number;
   cloudinary_url?: string;
+  optimizedImagesList?: OptimizedImages[];
 }
 
 export interface MainPagedResult<T> {
