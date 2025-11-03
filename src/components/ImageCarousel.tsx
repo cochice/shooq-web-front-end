@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { OptimizedImages } from '@/lib/api';
 
 interface ImageCarouselProps {
@@ -13,15 +13,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [currentIndex, setCurrentIndex] = useState(0);
     const [imageDimensions, setImageDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
     const [shouldHide, setShouldHide] = useState(false);
-
-    if (!images || images.length === 0) {
-        return null;
-    }
-
-    // 숨김 처리된 경우 아무것도 렌더링하지 않음
-    if (shouldHide) {
-        return null;
-    }
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [fullscreenIndex, setFullscreenIndex] = useState(0);
 
     const goToPrevious = () => {
         setCurrentIndex((prevIndex) =>
@@ -35,58 +28,129 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         );
     };
 
+    const openFullscreen = (index: number) => {
+        setFullscreenIndex(index);
+        setIsFullscreen(true);
+        // body 스크롤 방지
+        document.body.style.overflow = 'hidden';
+    };
+
+    const closeFullscreen = () => {
+        setIsFullscreen(false);
+        // body 스크롤 복원
+        document.body.style.overflow = 'unset';
+    };
+
+    const goToNextFullscreen = () => {
+        setFullscreenIndex((prevIndex) =>
+            prevIndex === images.length - 1 ? 0 : prevIndex + 1
+        );
+    };
+
+    const goToPreviousFullscreen = () => {
+        setFullscreenIndex((prevIndex) =>
+            prevIndex === 0 ? images.length - 1 : prevIndex - 1
+        );
+    };
+
+    // 키보드 이벤트 핸들러
+    useEffect(() => {
+        if (!isFullscreen) return;
+
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === 'Escape') {
+                closeFullscreen();
+            } else if (e.key === 'ArrowLeft') {
+                goToPreviousFullscreen();
+            } else if (e.key === 'ArrowRight') {
+                goToNextFullscreen();
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => {
+            window.removeEventListener('keydown', handleKeyDown);
+        };
+    }, [isFullscreen]);
+
+    // 조건부 return은 모든 hooks 이후에 위치
+    if (!images || images.length === 0) {
+        return null;
+    }
+
+    // 숨김 처리된 경우 아무것도 렌더링하지 않음
+    if (shouldHide) {
+        return null;
+    }
+
     const handleImageLoad = (e: React.SyntheticEvent<HTMLImageElement>, index: number) => {
         const img = e.currentTarget;
         const dimensions = { width: img.naturalWidth, height: img.naturalHeight };
 
-        // 첫 번째 이미지만 높이 체크
-        if (index === 0) {
-            // 디버깅용 콘솔 로그 (문제 발생 시 주석 해제하여 확인)
-            // console.log('====================================');
-            // console.log('글 제목:', title || '제목 없음');
-            // console.log('이미지 크기:', `${dimensions.width}px x ${dimensions.height}px`);
+        // 디버깅용 콘솔 로그 (문제 발생 시 주석 해제하여 확인)
+        // console.log('====================================');
+        // console.log('글 제목:', title || '제목 없음');
+        // console.log('이미지 인덱스:', index);
+        // console.log('이미지 크기:', `${dimensions.width}px x ${dimensions.height}px`);
 
-            // 높이가 2000px 이상이면 이미지 숨김
-            if (dimensions.height > 2000) {
-                // console.log('⚠️ 높이 2000px 초과 - 이미지 숨김 처리');
-                // console.log('====================================');
-                setShouldHide(true);
-                return;
-            }
-
-            // console.log('높이 제한 적용:', dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
+        // 첫 번째 이미지만 높이 체크하여 전체 캐러셀 숨김 여부 결정
+        if (index === 0 && dimensions.height > 2000) {
+            // console.log('⚠️ 높이 2000px 초과 - 이미지 숨김 처리');
             // console.log('====================================');
+            setShouldHide(true);
+            return;
         }
 
+        // 모든 이미지의 dimensions 저장
         setImageDimensions(prev => ({
             ...prev,
             [index]: dimensions
         }));
-    };
 
-    // 현재 이미지의 높이가 1000px 이상인지 확인
-    const currentImageDimension = imageDimensions[currentIndex];
-    const shouldLimitHeight = currentImageDimension && currentImageDimension.height > 1000;
+        // console.log('높이 제한 적용:', dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
+        // console.log('====================================');
+    };
 
     return (
         <div className="relative mb-3 group max-w-3xl">
             {/* 메인 이미지 - 레딧 스타일: 최대 너비 768px(3xl), 높이 1000px 이상이면 600px 제한 */}
-            <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center bg-gray-50 dark:bg-gray-800">
-                <img
-                    src={images[currentIndex].cloudinary_url}
-                    alt={`이미지 ${currentIndex + 1}`}
-                    className={`w-full h-auto object-contain ${
-                        shouldLimitHeight ? 'max-h-[600px]' : 'max-h-[800px]'
-                    } ${
-                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                    }`}
-                    loading="lazy"
-                    onLoad={(e) => handleImageLoad(e, currentIndex)}
-                    onError={(e) => {
-                        const target = e.target as HTMLImageElement;
-                        target.style.display = 'none';
+            <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                {/* 슬라이드 컨테이너 */}
+                <div
+                    className="flex transition-transform duration-500 ease-in-out"
+                    style={{
+                        transform: `translateX(-${currentIndex * 100}%)`,
                     }}
-                />
+                >
+                    {images.map((image, index) => {
+                        const dimension = imageDimensions[index];
+                        const limitHeight = dimension && dimension.height > 1000;
+
+                        return (
+                            <div
+                                key={index}
+                                className="w-full flex-shrink-0 flex items-center justify-center"
+                            >
+                                <img
+                                    src={image.cloudinary_url}
+                                    alt={`이미지 ${index + 1}`}
+                                    className={`w-full h-auto object-contain cursor-pointer ${
+                                        limitHeight ? 'max-h-[600px]' : 'max-h-[800px]'
+                                    } ${
+                                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                    }`}
+                                    loading="lazy"
+                                    onClick={() => openFullscreen(index)}
+                                    onLoad={(e) => handleImageLoad(e, index)}
+                                    onError={(e) => {
+                                        const target = e.target as HTMLImageElement;
+                                        target.style.display = 'none';
+                                    }}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
 
                 {/* 이미지 개수 표시 */}
                 {images.length > 1 && (
@@ -101,8 +165,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 <>
                     {/* 이전 버튼 */}
                     <button
+                        type="button"
                         onClick={goToPrevious}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                         aria-label="이전 이미지"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,8 +177,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
 
                     {/* 다음 버튼 */}
                     <button
+                        type="button"
                         onClick={goToNext}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full opacity-100 lg:opacity-0 lg:group-hover:opacity-100 transition-opacity"
                         aria-label="다음 이미지"
                     >
                         <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -125,6 +191,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     <div className="flex justify-center gap-1.5 mt-2">
                         {images.map((_, index) => (
                             <button
+                                type="button"
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`w-2 h-2 rounded-full transition-all ${
@@ -137,6 +204,81 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                         ))}
                     </div>
                 </>
+            )}
+
+            {/* 전체 화면 이미지 뷰어 */}
+            {isFullscreen && (
+                <div
+                    className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
+                    onClick={closeFullscreen}
+                >
+                    {/* 닫기 버튼 */}
+                    <button
+                        type="button"
+                        onClick={closeFullscreen}
+                        className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+                        aria-label="닫기"
+                    >
+                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+
+                    {/* 이미지 개수 표시 */}
+                    {images.length > 1 && (
+                        <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-black/60 text-white px-3 py-2 rounded-md text-sm z-50">
+                            {fullscreenIndex + 1} / {images.length}
+                        </div>
+                    )}
+
+                    {/* 이미지 컨테이너 */}
+                    <div
+                        className="relative w-full h-full flex items-center justify-center p-4"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <img
+                            src={images[fullscreenIndex].cloudinary_url}
+                            alt={`이미지 ${fullscreenIndex + 1}`}
+                            className="max-w-full max-h-full object-contain"
+                            onClick={(e) => e.stopPropagation()}
+                        />
+                    </div>
+
+                    {/* 이전/다음 버튼 (이미지가 2개 이상일 때만 표시) */}
+                    {images.length > 1 && (
+                        <>
+                            {/* 이전 버튼 */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goToPreviousFullscreen();
+                                }}
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full z-50"
+                                aria-label="이전 이미지"
+                            >
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+
+                            {/* 다음 버튼 */}
+                            <button
+                                type="button"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    goToNextFullscreen();
+                                }}
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full z-50"
+                                aria-label="다음 이미지"
+                            >
+                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </button>
+                        </>
+                    )}
+                </div>
             )}
         </div>
     );
