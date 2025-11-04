@@ -111,6 +111,18 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         // console.log('====================================');
     };
 
+    const handleImageError = (e: React.SyntheticEvent<HTMLImageElement>, index: number) => {
+        const target = e.currentTarget;
+
+        // 첫 번째 이미지가 로드 실패하면 전체 캐러셀 숨김
+        if (index === 0) {
+            setShouldHide(true);
+        } else {
+            // 다른 이미지는 개별적으로 숨김
+            target.style.display = 'none';
+        }
+    };
+
     return (
         <div className="relative mb-3 group max-w-3xl">
             {/* 메인 이미지 - 레딧 스타일: 최대 너비 768px(3xl), 높이 1000px 이상이면 600px 제한 */}
@@ -142,10 +154,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                     loading="lazy"
                                     onClick={() => openFullscreen(index)}
                                     onLoad={(e) => handleImageLoad(e, index)}
-                                    onError={(e) => {
-                                        const target = e.target as HTMLImageElement;
-                                        target.style.display = 'none';
-                                    }}
+                                    onError={(e) => handleImageError(e, index)}
                                 />
                             </div>
                         );
