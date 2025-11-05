@@ -85,7 +85,10 @@ const Header: React.FC<HeaderProps> = ({
                             )}
 
                             <Link
-                                href="/"
+                                href="/" prefetch={false} onClick={(e) => {
+                                    e.preventDefault();
+                                    window.location.href = '/';   // 완전 새로고침
+                                }}
                                 className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                             >
                                 <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
