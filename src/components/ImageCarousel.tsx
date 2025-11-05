@@ -138,21 +138,13 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         // console.log('이미지 인덱스:', index);
         // console.log('이미지 크기:', `${dimensions.width}px x ${dimensions.height}px`);
 
-        // 첫 번째 이미지만 높이 체크하여 전체 캐러셀 숨김 여부 결정
-        if (index === 0 && dimensions.height > 2000) {
-            // console.log('⚠️ 높이 2000px 초과 - 이미지 숨김 처리');
-            // console.log('====================================');
-            setShouldHide(true);
-            return;
-        }
-
         // 모든 이미지의 dimensions 저장
         setImageDimensions(prev => ({
             ...prev,
             [index]: dimensions
         }));
 
-        // console.log('높이 제한 적용:', dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
+        // console.log('높이 제한 적용:', dimensions.height > 2000 ? '예 (2000px 제한)' : dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
         // console.log('====================================');
     };
 
@@ -181,24 +173,47 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 >
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
-                        const limitHeight = dimension && dimension.height > 1000;
+                        // 높이에 따라 다른 제한 적용
+                        // 2000px 초과: 1000px 제한 + overflow hidden + 상단 정렬
+                        // 1000px 초과: 600px 제한 + 중앙 정렬
+                        // 그 외: 800px 제한 + 중앙 정렬
+                        let maxHeightClass = 'max-h-[800px]';
+                        let containerClass = 'w-full flex-shrink-0 flex items-center justify-center';
+                        let isTooTall = false;
+
+                        if (dimension) {
+                            if (dimension.height > 2000) {
+                                maxHeightClass = 'h-[1000px]';
+                                containerClass = 'w-full flex-shrink-0 flex items-start justify-center overflow-hidden h-[1000px]';
+                                isTooTall = true;
+                            } else if (dimension.height > 1000) {
+                                maxHeightClass = 'max-h-[600px]';
+                            }
+                        }
 
                         return (
                             <div
                                 key={index}
-                                className="w-full flex-shrink-0 flex items-center justify-center"
+                                className="w-full flex-shrink-0 relative"
                             >
-                                <img
-                                    src={image.cloudinary_url}
-                                    alt={`이미지 ${index + 1}`}
-                                    className={`w-full h-auto object-contain cursor-pointer ${limitHeight ? 'max-h-[600px]' : 'max-h-[800px]'
-                                        } ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                        }`}
-                                    loading="lazy"
-                                    onClick={() => openFullscreen(index)}
-                                    onLoad={(e) => handleImageLoad(e, index)}
-                                    onError={(e) => handleImageError(e, index)}
-                                />
+                                {/* 2000px 초과 이미지 안내 메시지 */}
+                                {isTooTall && (
+                                    <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-md text-xs z-10 pointer-events-none">
+                                        클릭하여 전체 이미지 보기
+                                    </div>
+                                )}
+                                <div className={containerClass}>
+                                    <img
+                                        src={image.cloudinary_url}
+                                        alt={`이미지 ${index + 1}`}
+                                        className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                            }`}
+                                        loading="lazy"
+                                        onClick={() => openFullscreen(index)}
+                                        onLoad={(e) => handleImageLoad(e, index)}
+                                        onError={(e) => handleImageError(e, index)}
+                                    />
+                                </div>
                             </div>
                         );
                     })}
@@ -247,8 +262,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
                                 className={`w-2 h-2 rounded-full transition-all ${index === currentIndex
-                                        ? 'bg-orange-500 w-6'
-                                        : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
+                                    ? 'bg-orange-500 w-6'
+                                    : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                                     }`}
                                 aria-label={`이미지 ${index + 1}로 이동`}
                             />
@@ -286,17 +301,25 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     )}
 
                     {/* 이미지 컨테이너 */}
-                    <div
-                        className="relative w-full h-full flex items-center justify-center p-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <img
-                            src={images[fullscreenIndex].cloudinary_url}
-                            alt={`이미지 ${fullscreenIndex + 1}`}
-                            className="max-w-full max-h-full object-contain"
-                            onClick={(e) => e.stopPropagation()}
-                        />
-                    </div>
+                    {(() => {
+                        const dimension = imageDimensions[fullscreenIndex];
+                        const isTooTall = dimension && dimension.height > 2000;
+
+                        return (
+                            <div
+                                className={`absolute inset-0 flex ${isTooTall ? 'items-start' : 'items-center'} justify-center p-4 overflow-auto`}
+                                onClick={(e) => e.stopPropagation()}
+                            >
+                                <img
+                                    src={images[fullscreenIndex].cloudinary_url}
+                                    alt={`이미지 ${fullscreenIndex + 1}`}
+                                    className={isTooTall ? "h-auto object-contain" : "max-w-full max-h-full object-contain"}
+                                    style={isTooTall ? { width: '600px', maxWidth: '90vw' } : {}}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </div>
+                        );
+                    })()}
 
                     {/* 이전/다음 버튼 (이미지가 2개 이상일 때만 표시) */}
                     {images.length > 1 && (
