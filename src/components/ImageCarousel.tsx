@@ -16,6 +16,10 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [isFullscreen, setIsFullscreen] = useState(false);
     const [fullscreenIndex, setFullscreenIndex] = useState(0);
 
+    // 터치 이벤트 상태
+    const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+    const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+
     const goToPrevious = () => {
         setCurrentIndex((prevIndex) =>
             prevIndex === 0 ? images.length - 1 : prevIndex - 1
@@ -51,6 +55,47 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         setFullscreenIndex((prevIndex) =>
             prevIndex === 0 ? images.length - 1 : prevIndex - 1
         );
+    };
+
+    // 터치 이벤트 핸들러
+    const handleTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart({
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY
+        });
+    };
+
+    const handleTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd({
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY
+        });
+    };
+
+    const handleTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const deltaX = touchStart.x - touchEnd.x;
+        const deltaY = touchStart.y - touchEnd.y;
+
+        // 수평 스와이프 (좌우)
+        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+        const minSwipeDistance = 50;
+
+        if (isHorizontalSwipe && Math.abs(deltaX) > minSwipeDistance) {
+            // 좌우 스와이프: 이미지 전환
+            if (deltaX > 0) {
+                // 왼쪽으로 스와이프: 다음 이미지
+                goToNextFullscreen();
+            } else {
+                // 오른쪽으로 스와이프: 이전 이미지
+                goToPreviousFullscreen();
+            }
+        } else if (!isHorizontalSwipe && deltaY < -minSwipeDistance) {
+            // 아래로 스와이프: 팝업 닫기
+            closeFullscreen();
+        }
     };
 
     // 키보드 이벤트 핸들러
@@ -146,11 +191,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                 <img
                                     src={image.cloudinary_url}
                                     alt={`이미지 ${index + 1}`}
-                                    className={`w-full h-auto object-contain cursor-pointer ${
-                                        limitHeight ? 'max-h-[600px]' : 'max-h-[800px]'
-                                    } ${
-                                        isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                    }`}
+                                    className={`w-full h-auto object-contain cursor-pointer ${limitHeight ? 'max-h-[600px]' : 'max-h-[800px]'
+                                        } ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                        }`}
                                     loading="lazy"
                                     onClick={() => openFullscreen(index)}
                                     onLoad={(e) => handleImageLoad(e, index)}
@@ -203,11 +246,10 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                 type="button"
                                 key={index}
                                 onClick={() => setCurrentIndex(index)}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                    index === currentIndex
+                                className={`w-2 h-2 rounded-full transition-all ${index === currentIndex
                                         ? 'bg-orange-500 w-6'
                                         : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
-                                }`}
+                                    }`}
                                 aria-label={`이미지 ${index + 1}로 이동`}
                             />
                         ))}
@@ -220,6 +262,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 <div
                     className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
                     onClick={closeFullscreen}
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={handleTouchMove}
+                    onTouchEnd={handleTouchEnd}
                 >
                     {/* 닫기 버튼 */}
                     <button
@@ -263,10 +308,10 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                     e.stopPropagation();
                                     goToPreviousFullscreen();
                                 }}
-                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full z-50"
+                                className="absolute left-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-50"
                                 aria-label="이전 이미지"
                             >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                             </button>
@@ -278,10 +323,10 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                     e.stopPropagation();
                                     goToNextFullscreen();
                                 }}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-3 rounded-full z-50"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 text-white p-2 rounded-full z-50"
                                 aria-label="다음 이미지"
                             >
-                                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                 </svg>
                             </button>
