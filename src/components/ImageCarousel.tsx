@@ -177,24 +177,28 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                         // 2000px 초과: 1000px 제한 + overflow hidden + 상단 정렬
                         // 1000px 초과: 600px 제한 + 중앙 정렬
                         // 그 외: 800px 제한 + 중앙 정렬
-                        let maxHeightClass = 'max-h-[800px]';
+                        let maxHeightClass = 'max-h-[600px]';
                         let containerClass = 'w-full flex-shrink-0 flex items-center justify-center';
                         let isTooTall = false;
 
                         if (dimension) {
                             if (dimension.height > 2000) {
-                                maxHeightClass = 'h-[1000px]';
+                                maxHeightClass = 'h-full';
                                 containerClass = 'w-full flex-shrink-0 flex items-start justify-center overflow-hidden h-[1000px]';
                                 isTooTall = true;
                             } else if (dimension.height > 1000) {
                                 maxHeightClass = 'max-h-[600px]';
+                                containerClass = 'w-full flex-shrink-0 flex items-center justify-center max-h-[600px]';
+                            } else {
+                                maxHeightClass = 'max-h-[800px]';
+                                containerClass = 'w-full flex-shrink-0 flex items-center justify-center max-h-[800px]';
                             }
                         }
 
                         return (
                             <div
                                 key={index}
-                                className="w-full flex-shrink-0 relative"
+                                className={containerClass}
                             >
                                 {/* 2000px 초과 이미지 안내 메시지 */}
                                 {isTooTall && (
@@ -202,18 +206,16 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                         클릭하여 전체 이미지 보기
                                     </div>
                                 )}
-                                <div className={containerClass}>
-                                    <img
-                                        src={image.cloudinary_url}
-                                        alt={`이미지 ${index + 1}`}
-                                        className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                            }`}
-                                        loading="lazy"
-                                        onClick={() => openFullscreen(index)}
-                                        onLoad={(e) => handleImageLoad(e, index)}
-                                        onError={(e) => handleImageError(e, index)}
-                                    />
-                                </div>
+                                <img
+                                    src={image.cloudinary_url}
+                                    alt={`이미지 ${index + 1}`}
+                                    className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                        }`}
+                                    loading="lazy"
+                                    onClick={() => openFullscreen(index)}
+                                    onLoad={(e) => handleImageLoad(e, index)}
+                                    onError={(e) => handleImageError(e, index)}
+                                />
                             </div>
                         );
                     })}
