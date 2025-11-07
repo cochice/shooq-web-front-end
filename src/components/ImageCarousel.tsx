@@ -160,10 +160,52 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         }
     };
 
+    // 메인 캐러셀용 터치 이벤트 핸들러
+    const handleMainTouchStart = (e: React.TouchEvent) => {
+        setTouchEnd(null);
+        setTouchStart({
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY
+        });
+    };
+
+    const handleMainTouchMove = (e: React.TouchEvent) => {
+        setTouchEnd({
+            x: e.targetTouches[0].clientX,
+            y: e.targetTouches[0].clientY
+        });
+    };
+
+    const handleMainTouchEnd = () => {
+        if (!touchStart || !touchEnd) return;
+
+        const deltaX = touchStart.x - touchEnd.x;
+        const deltaY = touchStart.y - touchEnd.y;
+
+        // 수평 스와이프만 처리
+        const isHorizontalSwipe = Math.abs(deltaX) > Math.abs(deltaY);
+        const minSwipeDistance = 50;
+
+        if (isHorizontalSwipe && Math.abs(deltaX) > minSwipeDistance) {
+            if (deltaX > 0) {
+                // 왼쪽으로 스와이프: 다음 이미지
+                goToNext();
+            } else {
+                // 오른쪽으로 스와이프: 이전 이미지
+                goToPrevious();
+            }
+        }
+    };
+
     return (
         <div className="relative mb-3 group max-w-3xl">
             {/* 메인 이미지 - 레딧 스타일: 최대 너비 768px(3xl), 높이 1000px 이상이면 600px 제한 */}
-            <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div
+                className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                onTouchStart={handleMainTouchStart}
+                onTouchMove={handleMainTouchMove}
+                onTouchEnd={handleMainTouchEnd}
+            >
                 {/* 슬라이드 컨테이너 */}
                 <div
                     className="flex transition-transform duration-500 ease-in-out"
@@ -302,26 +344,36 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                         </div>
                     )}
 
-                    {/* 이미지 컨테이너 */}
-                    {(() => {
-                        const dimension = imageDimensions[fullscreenIndex];
-                        const isTooTall = dimension && dimension.height > 2000;
+                    {/* 이미지 슬라이드 컨테이너 */}
+                    <div className="absolute inset-0 overflow-hidden">
+                        <div
+                            className="flex h-full transition-transform duration-500 ease-in-out"
+                            style={{
+                                transform: `translateX(-${fullscreenIndex * 100}%)`,
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {images.map((image, index) => {
+                                const dimension = imageDimensions[index];
+                                const isTooTall = dimension && dimension.height > 2000;
 
-                        return (
-                            <div
-                                className={`absolute inset-0 flex ${isTooTall ? 'items-start' : 'items-center'} justify-center p-4 overflow-auto`}
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <img
-                                    src={images[fullscreenIndex].cloudinary_url}
-                                    alt={`이미지 ${fullscreenIndex + 1}`}
-                                    className={isTooTall ? "h-auto object-contain" : "max-w-full max-h-full object-contain"}
-                                    style={isTooTall ? { width: '600px', maxWidth: '90vw' } : {}}
-                                    onClick={(e) => e.stopPropagation()}
-                                />
-                            </div>
-                        );
-                    })()}
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`w-full h-full flex-shrink-0 flex ${isTooTall ? 'items-start' : 'items-center'} justify-center ${isTooTall ? 'overflow-auto' : ''} px-8 py-4`}
+                                    >
+                                        <img
+                                            src={image.cloudinary_url}
+                                            alt={`이미지 ${index + 1}`}
+                                            className={isTooTall ? "h-auto object-contain" : "max-w-full max-h-full object-contain"}
+                                            style={isTooTall ? { width: '600px', maxWidth: '90vw' } : {}}
+                                            onClick={(e) => e.stopPropagation()}
+                                        />
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
 
                     {/* 이전/다음 버튼 (이미지가 2개 이상일 때만 표시) */}
                     {images.length > 1 && (
