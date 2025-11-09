@@ -1,0 +1,65 @@
+/* Swiper 커스텀 스타일 */
+
+/* 메인 캐러셀 스타일 */
+.main-carousel-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+/* Pagination 스타일 */
+.main-carousel-swiper .swiper-pagination {
+  bottom: 8px;
+}
+
+.main-carousel-swiper .swiper-pagination-bullet {
+  width: 8px;
+  height: 8px;
+  background-color: #d1d5db; /* gray-300 */
+  opacity: 1;
+  transition: all 0.3s;
+}
+
+.main-carousel-swiper .swiper-pagination-bullet-active {
+  background-color: #f97316; /* orange-500 */
+  width: 24px;
+  border-radius: 4px;
+}
+
+/* 다크모드 pagination */
+@media (prefers-color-scheme: dark) {
+  .main-carousel-swiper .swiper-pagination-bullet {
+    background-color: #4b5563; /* gray-600 */
+  }
+}
+
+/* 전체화면 캐러셀 스타일 */
+.fullscreen-carousel-swiper {
+  width: 100%;
+  height: 100%;
+}
+
+/* Swiper 슬라이드 높이 조정 */
+.fullscreen-carousel-swiper .swiper-slide {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 전체화면 Pagination 스타일 */
+.fullscreen-carousel-swiper .swiper-pagination {
+  bottom: 16px;
+}
+
+.fullscreen-carousel-swiper .swiper-pagination-bullet {
+  width: 10px;
+  height: 10px;
+  background-color: rgba(255, 255, 255, 0.5);
+  opacity: 1;
+  transition: all 0.3s;
+}
+
+.fullscreen-carousel-swiper .swiper-pagination-bullet-active {
+  background-color: #f97316; /* orange-500 */
+  width: 28px;
+  border-radius: 5px;
+}
