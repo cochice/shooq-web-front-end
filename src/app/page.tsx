@@ -24,6 +24,7 @@ function HomeContent() {
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isNewWindowMode, setIsNewWindowMode] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [maxNo, setMaxNo] = useState<number | undefined>(undefined); // 중복 방지를 위한 최대 no 값
     // const [copyrightDisplay, setCopyrightDisplay] = useState<'full' | 'short' | 'hidden'>('full');
 
     // 검색 상태
@@ -138,12 +139,19 @@ function HomeContent() {
                 siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
                 searchQuery,
                 undefined, // author
+                undefined // 첫 조회 시에는 maxNo 없음
             );
 
             setPosts(postsResult.data);
             setCurrentPage(postsResult.page);
             setTotalCount(postsResult.totalCount);
             setHasMore(postsResult.hasNextPage);
+
+            // 조회된 데이터 중 가장 큰 no 값을 maxNo로 저장
+            if (postsResult.data.length > 0) {
+                const currentMaxNo = Math.max(...postsResult.data.map(post => post.no));
+                setMaxNo(currentMaxNo);
+            }
 
             // 초기 로드 완료 표시
             if (isInitialLoad && !initialLoadCompleted) {
@@ -178,11 +186,18 @@ function HomeContent() {
                 siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
                 isSearchMode ? searchKeywordRef.current : undefined,
                 undefined, // author
+                maxNo // 중복 방지를 위해 maxNo 전달
             );
 
             setPosts(prev => [...prev, ...result.data]);
             setCurrentPage(result.page);
             setHasMore(result.hasNextPage);
+
+            // 추가 조회된 데이터 중 가장 큰 no 값으로 maxNo 업데이트
+            if (result.data.length > 0) {
+                const newMaxNo = Math.max(...result.data.map(post => post.no));
+                setMaxNo(prev => prev ? Math.max(prev, newMaxNo) : newMaxNo);
+            }
         } catch (error) {
             console.error('추가 포스트 로드 실패:', error);
             setError('추가 데이터를 불러오는데 실패했습니다.');

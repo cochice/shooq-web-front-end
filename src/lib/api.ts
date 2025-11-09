@@ -152,19 +152,21 @@ export class ApiService {
     pageSize: number = 10,
     site?: string,
     keyword?: string,
-    author?: string
+    author?: string,
+    maxNo?: number
   ): Promise<PagedResult<SiteBbsInfo>> {
     const params = new URLSearchParams({
       page: page.toString(),
       pageSize: pageSize.toString()
     });
-    
+
     if (site) {
       params.append('site', site);
     }
 
     if (keyword) params.append('keyword', keyword);
     if (author) params.append('author', author);
+    if (maxNo) params.append('maxNo', maxNo.toString());
 
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts?${params.toString()}`);
   }
