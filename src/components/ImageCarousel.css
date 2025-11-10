@@ -63,3 +63,27 @@
   width: 28px;
   border-radius: 5px;
 }
+
+/* Zoom 컨테이너 스타일 */
+.swiper-zoom-container {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: grab;
+}
+
+.swiper-zoom-container:active {
+  cursor: grabbing;
+}
+
+/* Zoom 상태에서 이미지 스타일 */
+.swiper-slide-zoomed .swiper-zoom-container {
+  cursor: move;
+}
+
+/* Zoom 시 부드러운 전환 효과 */
+.swiper-zoom-container > * {
+  transition: transform 0.3s ease;
+}

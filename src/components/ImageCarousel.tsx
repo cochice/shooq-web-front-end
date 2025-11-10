@@ -3,12 +3,13 @@
 import { useState, useEffect } from 'react';
 import { OptimizedImages } from '@/lib/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
-import { Pagination, Keyboard } from 'swiper/modules';
+import { Pagination, Keyboard, Zoom } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
 
 // Swiper 스타일 임포트
 import 'swiper/css';
 import 'swiper/css/pagination';
+import 'swiper/css/zoom';
 import './ImageCarousel.css';
 
 interface ImageCarouselProps {
@@ -25,10 +26,11 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [fullscreenIndex, setFullscreenIndex] = useState(0);
     const [mainSwiper, setMainSwiper] = useState<SwiperType | null>(null);
     const [fullscreenSwiper, setFullscreenSwiper] = useState<SwiperType | null>(null);
+    const [maxHeight, setMaxHeight] = useState<number>(0);
 
-    // 터치 이벤트 상태 (fullscreen 닫기용으로만 사용)
-    const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-    const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+    // 터치 이벤트 상태 (fullscreen 닫기용) - 주석 처리
+    // const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
+    // const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
 
     const openFullscreen = (index: number) => {
         setFullscreenIndex(index);
@@ -43,33 +45,33 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         document.body.style.overflow = 'unset';
     };
 
-    // 전체화면 닫기용 터치 이벤트 핸들러 (아래로 스와이프)
-    const handleTouchStart = (e: React.TouchEvent) => {
-        setTouchEnd(null);
-        setTouchStart({
-            x: e.targetTouches[0].clientX,
-            y: e.targetTouches[0].clientY
-        });
-    };
+    // 전체화면 닫기용 터치 이벤트 핸들러 (아래로 스와이프) - 주석 처리
+    // const handleTouchStart = (e: React.TouchEvent) => {
+    //     setTouchEnd(null);
+    //     setTouchStart({
+    //         x: e.targetTouches[0].clientX,
+    //         y: e.targetTouches[0].clientY
+    //     });
+    // };
 
-    const handleTouchMove = (e: React.TouchEvent) => {
-        setTouchEnd({
-            x: e.targetTouches[0].clientX,
-            y: e.targetTouches[0].clientY
-        });
-    };
+    // const handleTouchMove = (e: React.TouchEvent) => {
+    //     setTouchEnd({
+    //         x: e.targetTouches[0].clientX,
+    //         y: e.targetTouches[0].clientY
+    //     });
+    // };
 
-    const handleTouchEnd = () => {
-        if (!touchStart || !touchEnd) return;
+    // const handleTouchEnd = () => {
+    //     if (!touchStart || !touchEnd) return;
 
-        const deltaY = touchStart.y - touchEnd.y;
-        const minSwipeDistance = 50;
+    //     const deltaY = touchStart.y - touchEnd.y;
+    //     const minSwipeDistance = 50;
 
-        // 아래로 스와이프: 팝업 닫기
-        if (deltaY < -minSwipeDistance) {
-            closeFullscreen();
-        }
-    };
+    //     // 아래로 스와이프: 팝업 닫기
+    //     if (deltaY < -minSwipeDistance) {
+    //         closeFullscreen();
+    //     }
+    // };
 
     // 키보드 이벤트 핸들러 (Escape로 전체화면 닫기)
     useEffect(() => {
@@ -108,10 +110,32 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         // console.log('이미지 크기:', `${dimensions.width}px x ${dimensions.height}px`);
 
         // 모든 이미지의 dimensions 저장
-        setImageDimensions(prev => ({
-            ...prev,
-            [index]: dimensions
-        }));
+        setImageDimensions(prev => {
+            const newDimensions = {
+                ...prev,
+                [index]: dimensions
+            };
+
+            // 모든 이미지의 표시될 높이 계산해서 최대값 찾기
+            const heights = Object.values(newDimensions).map(dim => {
+                const aspectRatio = dim.height / dim.width;
+                // 높이가 너비의 2.5배 이상이면 긴 이미지로 간주
+                if (aspectRatio >= 2.5) {
+                    return 1000; // 긴 이미지는 1000px로 제한
+                } else if (dim.height > 1000) {
+                    return Math.min(dim.height, 600); // 1000~2000은 최대 600px
+                } else {
+                    return Math.min(dim.height, 800); // 1000 이하는 최대 800px
+                }
+            });
+
+            const calculatedMaxHeight = Math.max(...heights, 0);
+            // 1% 높이 추가
+            const adjustedHeight = Math.ceil(calculatedMaxHeight * 1.01);
+            setMaxHeight(adjustedHeight);
+
+            return newDimensions;
+        });
 
         // console.log('높이 제한 적용:', dimensions.height > 2000 ? '예 (2000px 제한)' : dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
         // console.log('====================================');
@@ -133,12 +157,15 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     return (
         <div className="relative mb-3 group max-w-3xl">
             {/* 메인 이미지 캐러셀 - Swiper로 구현 */}
-            <div className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+            <div
+                className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                style={maxHeight > 0 ? { height: `${maxHeight}px` } : {}}
+            >
                 <Swiper
                     modules={[Pagination, Keyboard]}
                     pagination={{
                         clickable: true,
-                        enabled: images.length > 1,
+                        enabled: false,
                     }}
                     keyboard={{
                         enabled: true,
@@ -157,27 +184,25 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
                         let maxHeightClass = 'max-h-[600px]';
-                        let containerClass = 'w-full flex items-center justify-center';
                         let isTooTall = false;
 
                         if (dimension) {
-                            if (dimension.height > 2000) {
-                                maxHeightClass = 'h-full';
-                                containerClass = 'w-full flex items-start justify-center overflow-hidden h-[1000px]';
+                            const aspectRatio = dimension.height / dimension.width;
+                            // 높이가 너비의 2.5배 이상이면 긴 이미지로 간주
+                            if (aspectRatio >= 2.5) {
+                                maxHeightClass = 'h-auto';
                                 isTooTall = true;
                             } else if (dimension.height > 1000) {
                                 maxHeightClass = 'max-h-[600px]';
-                                containerClass = 'w-full flex items-center justify-center max-h-[600px]';
                             } else {
                                 maxHeightClass = 'max-h-[800px]';
-                                containerClass = 'w-full flex items-center justify-center max-h-[800px]';
                             }
                         }
 
                         return (
                             <SwiperSlide key={index}>
-                                <div className={containerClass}>
-                                    {/* 2000px 초과 이미지 안내 메시지 */}
+                                <div className={`w-full h-full flex ${isTooTall ? 'items-start overflow-hidden' : 'items-center'} justify-center`}>
+                                    {/* 긴 이미지 안내 메시지 */}
                                     {isTooTall && (
                                         <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-md text-xs z-10 pointer-events-none">
                                             클릭하여 전체 이미지 보기
@@ -212,9 +237,6 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 <div
                     className="fixed inset-0 z-50 bg-black/95 flex items-center justify-center"
                     onClick={closeFullscreen}
-                    onTouchStart={handleTouchStart}
-                    onTouchMove={handleTouchMove}
-                    onTouchEnd={handleTouchEnd}
                 >
                     {/* 닫기 버튼 */}
                     <button
@@ -238,13 +260,18 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     {/* Swiper 슬라이드 컨테이너 */}
                     <div className="absolute inset-0" onClick={(e) => e.stopPropagation()}>
                         <Swiper
-                            modules={[Pagination, Keyboard]}
+                            modules={[Pagination, Keyboard, Zoom]}
                             pagination={{
                                 clickable: true,
-                                enabled: images.length > 1,
+                                enabled: false,
                             }}
                             keyboard={{
                                 enabled: true,
+                            }}
+                            zoom={{
+                                maxRatio: 3,
+                                minRatio: 1,
+                                toggle: true,
                             }}
                             loop={false}
                             slidesPerView={1}
@@ -260,19 +287,31 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                         >
                             {images.map((image, index) => {
                                 const dimension = imageDimensions[index];
-                                const isTooTall = dimension && dimension.height > 2000;
+                                const aspectRatio = dimension ? dimension.height / dimension.width : 0;
+                                const isTooTall = aspectRatio >= 2.5;
 
                                 return (
                                     <SwiperSlide key={index}>
-                                        <div className={`w-full h-full flex ${isTooTall ? 'items-start' : 'items-center'} justify-center ${isTooTall ? 'overflow-auto' : ''} px-8 py-4`}>
-                                            <img
-                                                src={image.cloudinary_url}
-                                                alt={`이미지 ${index + 1}`}
-                                                className={isTooTall ? "h-auto object-contain" : "max-w-full max-h-full object-contain"}
-                                                style={isTooTall ? { width: '600px', maxWidth: '90vw' } : {}}
-                                                onClick={(e) => e.stopPropagation()}
-                                            />
-                                        </div>
+                                        {isTooTall ? (
+                                            // 긴 이미지: 스크롤 가능, Zoom 비활성화
+                                            <div className="w-full h-full flex items-start justify-center overflow-auto px-8 py-4">
+                                                <img
+                                                    src={image.cloudinary_url}
+                                                    alt={`이미지 ${index + 1}`}
+                                                    className="h-auto object-contain"
+                                                    style={{ width: '600px', maxWidth: '90vw' }}
+                                                />
+                                            </div>
+                                        ) : (
+                                            // 일반 이미지: Zoom 가능
+                                            <div className="swiper-zoom-container">
+                                                <img
+                                                    src={image.cloudinary_url}
+                                                    alt={`이미지 ${index + 1}`}
+                                                    className="max-w-full max-h-full object-contain"
+                                                />
+                                            </div>
+                                        )}
                                     </SwiperSlide>
                                 );
                             })}
