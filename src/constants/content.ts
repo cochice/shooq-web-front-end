@@ -10,7 +10,7 @@ export const STORAGE_KEYS = {
 
 // 성인 콘텐츠 감지 키워드 (추후 확장 가능)
 export const ADULT_CONTENT_KEYWORDS = [
-    'ㅇㅎ', 'ㅎㅂ', '19금', '후방', '약후방', '에로'
+    'ㅇㅎ', 'ㅎㅂ', '19금', '후방', '약후방', '에로', '꼴리면'
 ] as const;
 
 // 사이트 로고 정보 타입

@@ -27,10 +27,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [mainSwiper, setMainSwiper] = useState<SwiperType | null>(null);
     const [fullscreenSwiper, setFullscreenSwiper] = useState<SwiperType | null>(null);
     const [maxHeight, setMaxHeight] = useState<number>(0);
-
-    // 터치 이벤트 상태 (fullscreen 닫기용) - 주석 처리
-    // const [touchStart, setTouchStart] = useState<{ x: number; y: number } | null>(null);
-    // const [touchEnd, setTouchEnd] = useState<{ x: number; y: number } | null>(null);
+    const [containerWidth, setContainerWidth] = useState<number>(0);
 
     const openFullscreen = (index: number) => {
         setFullscreenIndex(index);
@@ -45,33 +42,53 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         document.body.style.overflow = 'unset';
     };
 
-    // 전체화면 닫기용 터치 이벤트 핸들러 (아래로 스와이프) - 주석 처리
-    // const handleTouchStart = (e: React.TouchEvent) => {
-    //     setTouchEnd(null);
-    //     setTouchStart({
-    //         x: e.targetTouches[0].clientX,
-    //         y: e.targetTouches[0].clientY
-    //     });
-    // };
+    // 화면 크기 감지 및 컨테이너 너비 업데이트
+    useEffect(() => {
+        const updateContainerWidth = () => {
+            // max-w-3xl (48rem = 768px) 기준으로 실제 컨테이너 너비 계산
+            const maxWidth = 768; // max-w-3xl
+            const windowWidth = window.innerWidth;
+            const actualWidth = Math.min(windowWidth - 32, maxWidth); // 32px는 padding
+            setContainerWidth(actualWidth);
+        };
 
-    // const handleTouchMove = (e: React.TouchEvent) => {
-    //     setTouchEnd({
-    //         x: e.targetTouches[0].clientX,
-    //         y: e.targetTouches[0].clientY
-    //     });
-    // };
+        updateContainerWidth();
+        window.addEventListener('resize', updateContainerWidth);
+        return () => window.removeEventListener('resize', updateContainerWidth);
+    }, []);
 
-    // const handleTouchEnd = () => {
-    //     if (!touchStart || !touchEnd) return;
+    // containerWidth가 변경되면 높이를 다시 계산
+    useEffect(() => {
+        if (containerWidth === 0 || Object.keys(imageDimensions).length === 0) {
+            return;
+        }
 
-    //     const deltaY = touchStart.y - touchEnd.y;
-    //     const minSwipeDistance = 50;
+        const heights = Object.values(imageDimensions).map(dim => {
+            const aspectRatio = dim.height / dim.width;
 
-    //     // 아래로 스와이프: 팝업 닫기
-    //     if (deltaY < -minSwipeDistance) {
-    //         closeFullscreen();
-    //     }
-    // };
+            // 이미지의 원본 너비 대비 컨테이너 너비 비율 계산
+            const widthRatio = containerWidth / dim.width;
+
+            // 실제 표시될 높이 = 원본 높이 * 너비 비율
+            let displayHeight = dim.height * widthRatio;
+
+            // 높이가 너비의 2.5배 이상이면 긴 이미지로 간주
+            if (aspectRatio >= 2.5) {
+                displayHeight = Math.min(displayHeight, 1000); // 긴 이미지는 1000px로 제한
+            } else if (dim.height > 1000) {
+                displayHeight = Math.min(displayHeight, 600); // 1000~2000은 최대 600px
+            } else {
+                displayHeight = Math.min(displayHeight, 800); // 1000 이하는 최대 800px
+            }
+
+            return displayHeight;
+        });
+
+        const calculatedMaxHeight = Math.max(...heights, 0);
+        // 1% 높이 추가
+        const adjustedHeight = Math.ceil(calculatedMaxHeight * 1.01);
+        setMaxHeight(adjustedHeight);
+    }, [containerWidth, imageDimensions]);
 
     // 키보드 이벤트 핸들러 (Escape로 전체화면 닫기)
     useEffect(() => {
@@ -108,6 +125,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         // console.log('글 제목:', title || '제목 없음');
         // console.log('이미지 인덱스:', index);
         // console.log('이미지 크기:', `${dimensions.width}px x ${dimensions.height}px`);
+        // console.log('컨테이너 너비:', containerWidth);
 
         // 모든 이미지의 dimensions 저장
         setImageDimensions(prev => {
@@ -116,17 +134,31 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 [index]: dimensions
             };
 
+            // 컨테이너 너비가 아직 계산되지 않았으면 기다림
+            if (containerWidth === 0) {
+                return newDimensions;
+            }
+
             // 모든 이미지의 표시될 높이 계산해서 최대값 찾기
             const heights = Object.values(newDimensions).map(dim => {
                 const aspectRatio = dim.height / dim.width;
+
+                // 이미지의 원본 너비 대비 컨테이너 너비 비율 계산
+                const widthRatio = containerWidth / dim.width;
+
+                // 실제 표시될 높이 = 원본 높이 * 너비 비율
+                let displayHeight = dim.height * widthRatio;
+
                 // 높이가 너비의 2.5배 이상이면 긴 이미지로 간주
                 if (aspectRatio >= 2.5) {
-                    return 1000; // 긴 이미지는 1000px로 제한
+                    displayHeight = Math.min(displayHeight, 1000); // 긴 이미지는 1000px로 제한
                 } else if (dim.height > 1000) {
-                    return Math.min(dim.height, 600); // 1000~2000은 최대 600px
+                    displayHeight = Math.min(displayHeight, 600); // 1000~2000은 최대 600px
                 } else {
-                    return Math.min(dim.height, 800); // 1000 이하는 최대 800px
+                    displayHeight = Math.min(displayHeight, 800); // 1000 이하는 최대 800px
                 }
+
+                return displayHeight;
             });
 
             const calculatedMaxHeight = Math.max(...heights, 0);
@@ -134,10 +166,11 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
             const adjustedHeight = Math.ceil(calculatedMaxHeight * 1.01);
             setMaxHeight(adjustedHeight);
 
+            //console.log('계산된 최대 높이:', adjustedHeight);
+
             return newDimensions;
         });
 
-        // console.log('높이 제한 적용:', dimensions.height > 2000 ? '예 (2000px 제한)' : dimensions.height > 1000 ? '예 (600px)' : '아니오 (800px)');
         // console.log('====================================');
     };
 
@@ -180,6 +213,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     onSwiper={setMainSwiper}
                     onSlideChange={(swiper) => setCurrentIndex(swiper.activeIndex)}
                     className="main-carousel-swiper"
+                    resistance={true}
+                    grabCursor={true}
+                    speed={400}
                 >
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
@@ -269,7 +305,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                 enabled: true,
                             }}
                             zoom={{
-                                maxRatio: 3,
+                                maxRatio: 2,
                                 minRatio: 1,
                                 toggle: true,
                             }}
@@ -284,6 +320,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                             onSwiper={setFullscreenSwiper}
                             onSlideChange={(swiper) => setFullscreenIndex(swiper.activeIndex)}
                             className="fullscreen-carousel-swiper h-full"
+                            resistance={true}
+                            grabCursor={true}
+                            speed={400}
                         >
                             {images.map((image, index) => {
                                 const dimension = imageDimensions[index];
