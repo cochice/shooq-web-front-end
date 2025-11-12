@@ -1060,7 +1060,33 @@ export default function AdminPage() {
                                                         const hour = String(crawlDate.getHours()).padStart(2, '0');
                                                         const minute = String(crawlDate.getMinutes()).padStart(2, '0');
                                                         const second = String(crawlDate.getSeconds()).padStart(2, '0');
-                                                        return `${year}-${month}-${day} ${hour}:${minute}:${second}`;
+
+                                                        // 경과 시간 계산
+                                                        const now = new Date();
+                                                        const diffMs = now.getTime() - crawlDate.getTime();
+                                                        const diffMinutes = Math.floor(diffMs / (1000 * 60));
+                                                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+                                                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+                                                        let timeAgo = '';
+                                                        if (diffMinutes < 1) {
+                                                            timeAgo = '방금 전';
+                                                        } else if (diffMinutes < 60) {
+                                                            timeAgo = `${diffMinutes}분 전`;
+                                                        } else if (diffHours < 24) {
+                                                            timeAgo = `${diffHours}시간 전`;
+                                                        } else {
+                                                            timeAgo = `${diffDays}일 전`;
+                                                        }
+
+                                                        return (
+                                                            <>
+                                                                <div>{`${year}-${month}-${day} ${hour}:${minute}:${second}`}</div>
+                                                                <div className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'} mt-1`}>
+                                                                    ({timeAgo})
+                                                                </div>
+                                                            </>
+                                                        );
                                                     })()
                                                 ) : (
                                                     '데이터 없음'
@@ -1187,41 +1213,9 @@ export default function AdminPage() {
 
                             <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
                                 <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>컨텐츠 관리</h3>
-                                            <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 등록된 글 목록</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 크롤링</p>
-                                            <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-                                                {recentPostsByCrawlLoading ? (
-                                                    <span className="animate-pulse">로딩중...</span>
-                                                ) : recentPostsByCrawl.length > 0 ? (
-                                                    (() => {
-                                                        const firstPost = recentPostsByCrawl[0];
-                                                        const regDate = firstPost.regDate ? new Date(firstPost.regDate) : null;
-                                                        if (!regDate) return '정보 없음';
-
-                                                        const now = new Date();
-                                                        const diffMs = now.getTime() - regDate.getTime();
-                                                        const diffMinutes = Math.floor(diffMs / (1000 * 60));
-                                                        const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-                                                        const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-                                                        if (diffMinutes < 60) {
-                                                            return `${diffMinutes}분 전`;
-                                                        } else if (diffHours < 24) {
-                                                            return `${diffHours}시간 전`;
-                                                        } else {
-                                                            return `${diffDays}일 전`;
-                                                        }
-                                                    })()
-                                                ) : (
-                                                    '정보 없음'
-                                                )}
-                                            </p>
-                                        </div>
+                                    <div>
+                                        <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>컨텐츠 관리</h3>
+                                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 등록된 글 목록</p>
                                     </div>
                                 </div>
                                 <div className="p-6 space-y-6">
