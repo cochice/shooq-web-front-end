@@ -278,11 +278,11 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     <button
                         type="button"
                         onClick={closeFullscreen}
-                        className="absolute top-4 right-4 text-white hover:text-gray-300 z-50"
+                        className="absolute top-4 right-4 w-10 h-10 rounded-full bg-gray-800/80 hover:bg-gray-700/90 flex items-center justify-center transition-colors z-50"
                         aria-label="닫기"
                     >
-                        <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
 
