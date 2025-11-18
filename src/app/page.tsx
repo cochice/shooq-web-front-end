@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -11,6 +11,7 @@ import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/c
 import { StorageUtils } from '@/utils/storage';
 
 function HomeContent() {
+    const router = useRouter();
     const searchParams = useSearchParams();
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
     const keywordParam = searchParams.get('keyword'); // GET 파라미터에서 keyword 값 가져오기
@@ -616,48 +617,55 @@ function HomeContent() {
                                                 </>
                                             )}
                                             <span>{formatDate(post.date)}</span>
+                                            {post.url && (
+                                                <>
+                                                    <span className="mx-1">•</span>
+                                                    <a
+                                                        href={post.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-orange-500 hover:text-orange-600 flex items-center"
+                                                        onClick={() => markPostAsRead(postId)}
+                                                    >
+                                                        원본 링크
+                                                        <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                        </svg>
+                                                    </a>
+                                                </>
+                                            )}
                                         </div>
 
-                                        {post.url ? (
+                                        {post.content || (post.optimizedImagesList && post.optimizedImagesList.length > 0) || post.cloudinary_url ? (
+                                            <h2
+                                                className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                                    }`}
+                                                onClick={() => {
+                                                    markPostAsRead(postId);
+                                                    router.push(`/post/${postId}`);
+                                                }}
+                                            >
+                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                            </h2>
+                                        ) : post.url ? (
                                             <a
                                                 href={post.url}
-                                                target={isNewWindowMode ? "_blank" : "_self"}
-                                                rel={isNewWindowMode ? "noopener noreferrer" : undefined}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
                                                 className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
                                                     }`}
                                                 onClick={() => markPostAsRead(postId)}
                                             >
                                                 {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                                                {isNewWindowMode && (
-                                                    <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                    </svg>
-                                                )}
+                                                <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                </svg>
                                             </a>
                                         ) : (
                                             <h2 className={`text-lg font-semibold mb-2 ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
                                                 }`}>
                                                 {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                                             </h2>
-                                        )}
-
-                                        {post.content && (
-                                            <p className={`text-sm mb-3 ${isRead ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'
-                                                }`}>
-                                                {post.url ? (
-                                                    <a
-                                                        href={post.url}
-                                                        target={isNewWindowMode ? "_blank" : "_self"}
-                                                        rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                                                        className="hover:text-orange-500 cursor-pointer"
-                                                        onClick={() => markPostAsRead(postId)}
-                                                    >
-                                                        {post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)}
-                                                    </a>
-                                                ) : (
-                                                    post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
-                                                )}
-                                            </p>
                                         )}
 
                                         {/* YouTube 비디오 또는 이미지 캐러셀 */}

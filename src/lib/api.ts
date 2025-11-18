@@ -172,7 +172,7 @@ export class ApiService {
   }
 
   static async getPost(no: number): Promise<SiteBbsInfo> {
-    return this.fetchApi<SiteBbsInfo>(`/${no}`);
+    return this.fetchApi<SiteBbsInfo>(`/posts/${no}`);
   }
 
  static async getWeek(

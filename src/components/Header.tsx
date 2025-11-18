@@ -154,8 +154,8 @@ const Header: React.FC<HeaderProps> = ({
                                 </button>
                             )}
 
-                            {/* New Window Mode Toggle */}
-                            {onToggleNewWindowMode && (
+                            {/* New Window Mode Toggle - Hidden */}
+                            {onToggleNewWindowMode && false && (
                                 <button
                                     type="button"
                                     onClick={onToggleNewWindowMode}
