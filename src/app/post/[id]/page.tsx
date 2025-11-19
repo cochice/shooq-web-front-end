@@ -4,6 +4,8 @@ import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Header from '@/components/Header';
+import Sidebar from '@/components/Sidebar';
+import ImageCarousel from '@/components/ImageCarousel';
 import { getSiteLogo } from '@/constants/content';
 
 interface PostDetailPageProps {
@@ -19,12 +21,19 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isDarkMode, setIsDarkMode] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
         const textarea = document.createElement('textarea');
         textarea.innerHTML = text;
         return textarea.value;
+    };
+
+    // 네비게이션 핸들러
+    const handleNavigate = (href: string) => {
+        router.push(href);
+        setIsSidebarOpen(false);
     };
 
     // 날짜 포맷팅 함수
@@ -123,8 +132,8 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                 <Header
                     isDarkMode={isDarkMode}
                     onToggleDarkMode={toggleDarkMode}
-                    isSidebarOpen={false}
-                    onToggleSidebar={() => {}}
+                    isSidebarOpen={isSidebarOpen}
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                     searchKeyword=""
                     onSearchKeywordChange={() => {}}
                     onSearch={() => {}}
@@ -135,7 +144,12 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     isNewWindowMode={false}
                     onToggleNewWindowMode={() => {}}
                     onHomeClick={() => router.push('/')}
-                    showDarkModeToggle={false}
+                    showDarkModeToggle={true}
+                />
+                <Sidebar
+                    isSidebarOpen={isSidebarOpen}
+                    onCloseSidebar={() => setIsSidebarOpen(false)}
+                    onNavigate={handleNavigate}
                 />
                 <div className="flex justify-center items-center py-20">
                     <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
@@ -150,8 +164,8 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                 <Header
                     isDarkMode={isDarkMode}
                     onToggleDarkMode={toggleDarkMode}
-                    isSidebarOpen={false}
-                    onToggleSidebar={() => {}}
+                    isSidebarOpen={isSidebarOpen}
+                    onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                     searchKeyword=""
                     onSearchKeywordChange={() => {}}
                     onSearch={() => {}}
@@ -162,13 +176,19 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     isNewWindowMode={false}
                     onToggleNewWindowMode={() => {}}
                     onHomeClick={() => router.push('/')}
-                    showDarkModeToggle={false}
+                    showDarkModeToggle={true}
+                />
+                <Sidebar
+                    isSidebarOpen={isSidebarOpen}
+                    onCloseSidebar={() => setIsSidebarOpen(false)}
+                    onNavigate={handleNavigate}
                 />
                 <div className="max-w-4xl mx-auto p-4">
                     <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">
                         <p className="text-red-800 dark:text-red-200">{error || '게시글을 찾을 수 없습니다.'}</p>
                     </div>
                     <button
+                        type="button"
                         onClick={() => router.back()}
                         className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
@@ -184,8 +204,8 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
             <Header
                 isDarkMode={isDarkMode}
                 onToggleDarkMode={toggleDarkMode}
-                isSidebarOpen={false}
-                onToggleSidebar={() => {}}
+                isSidebarOpen={isSidebarOpen}
+                onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
                 searchKeyword=""
                 onSearchKeywordChange={() => {}}
                 onSearch={() => {}}
@@ -196,117 +216,128 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                 isNewWindowMode={false}
                 onToggleNewWindowMode={() => {}}
                 onHomeClick={() => router.push('/')}
-                showDarkModeToggle={false}
+                showDarkModeToggle={true}
             />
 
-            <div className="max-w-4xl mx-auto p-4">
+            {/* 모바일 사이드바 */}
+            <Sidebar
+                isSidebarOpen={isSidebarOpen}
+                onCloseSidebar={() => setIsSidebarOpen(false)}
+                onNavigate={handleNavigate}
+            />
+
+            <div className="flex flex-col lg:flex-row">
+                {/* 데스크탑 사이드바 */}
+                <Sidebar onNavigate={handleNavigate} />
+
+                {/* 메인 컨텐츠 */}
+                <main className="flex-1 p-4 max-w-4xl">
                 {/* 뒤로 가기 버튼 */}
                 <button
+                    type="button"
                     onClick={() => router.back()}
-                    className="mb-4 flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                    className="mb-4 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
+                    aria-label="뒤로 가기"
                 >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                     </svg>
-                    뒤로 가기
                 </button>
 
-                {/* 게시글 헤더 */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-4">
-                    {/* 제목 */}
-                    <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-                        {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                    </h1>
-
-                    {/* 통계 */}
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500 dark:text-gray-400 border-t border-b border-gray-200 dark:border-gray-700 py-3">
-                        {post.likes && (
-                            <div className="flex items-center space-x-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                </svg>
-                                <span>{post.likes} 추천</span>
+                {/* 메타데이터 */}
+                <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-3">
+                    {post.site && (
+                        <>
+                            <div
+                                className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold mr-2"
+                                style={{
+                                    backgroundColor: getSiteLogo(post.site).bgColor,
+                                    color: getSiteLogo(post.site).textColor
+                                }}
+                            >
+                                {getSiteLogo(post.site).letter}
                             </div>
-                        )}
-                        {post.reply_num && (
-                            <div className="flex items-center space-x-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            <span className="font-medium">{post.site}</span>
+                            <span className="mx-1">•</span>
+                        </>
+                    )}
+                    {post.author && (
+                        <>
+                            <span>Posted by {post.author}</span>
+                            <span className="mx-1">•</span>
+                        </>
+                    )}
+                    <span>{formatDate(post.date)}</span>
+                    {post.url && (
+                        <>
+                            <span className="mx-1">•</span>
+                            <a
+                                href={post.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-orange-500 hover:text-orange-600 flex items-center"
+                            >
+                                원본 링크
+                                <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                 </svg>
-                                <span>{post.reply_num} 답글</span>
-                            </div>
-                        )}
-                        {post.views && (
-                            <div className="flex items-center space-x-1">
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                </svg>
-                                <span>{post.views} 조회</span>
-                            </div>
-                        )}
-                    </div>
+                            </a>
+                        </>
+                    )}
                 </div>
 
-                {/* 이미지 표시 */}
-                {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-4">
-                        <div className="space-y-4">
-                            {post.optimizedImagesList.map((image, index) => (
-                                image.cloudinary_url && (
-                                    <div key={index} className="w-full">
-                                        <img
-                                            src={image.cloudinary_url}
-                                            alt={`${post.title} - 이미지 ${index + 1}`}
-                                            className="w-full h-auto rounded-lg"
-                                            loading="lazy"
-                                            onError={(e) => {
-                                                const target = e.target as HTMLImageElement;
-                                                target.style.display = 'none';
-                                            }}
-                                        />
-                                    </div>
-                                )
-                            ))}
-                        </div>
-                    </div>
-                )}
+                {/* 제목 */}
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
+                    {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                </h1>
 
-                {/* 단일 이미지 표시 */}
-                {post.cloudinary_url && !(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6 mb-4">
-                        <img
-                            src={post.cloudinary_url}
-                            alt={post.title || '썸네일'}
-                            className="w-full h-auto rounded-lg"
-                            loading="lazy"
-                            onError={(e) => {
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                            }}
-                        />
-                    </div>
+                {/* 이미지 캐러셀 */}
+                {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
+                    <ImageCarousel
+                        images={post.optimizedImagesList}
+                        title={post.title}
+                    />
                 )}
 
                 {/* 게시글 내용 */}
                 {post.content && (
-                    <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-6">
+                    <div className="mb-6">
                         <div
-                            className="prose dark:prose-invert max-w-none"
+                            className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
                             dangerouslySetInnerHTML={{ __html: post.content }}
                         />
                     </div>
                 )}
 
-                {/* 하단 뒤로 가기 버튼 */}
-                <div className="mt-6">
-                    <button
-                        onClick={() => router.back()}
-                        className="px-6 py-3 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 font-medium"
-                    >
-                        목록으로 돌아가기
-                    </button>
+                {/* 통계 */}
+                <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-700">
+                    {post.likes !== undefined && post.likes !== null && (
+                        <div className="flex items-center space-x-1">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            </svg>
+                            <span>{post.likes}</span>
+                        </div>
+                    )}
+                    {post.reply_num !== undefined && post.reply_num !== null && (
+                        <div className="flex items-center space-x-1">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                            </svg>
+                            <span>{post.reply_num}</span>
+                        </div>
+                    )}
+                    {post.views !== undefined && post.views !== null && (
+                        <div className="flex items-center space-x-1">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <span>{post.views}</span>
+                        </div>
+                    )}
                 </div>
+                </main>
             </div>
         </div>
     );

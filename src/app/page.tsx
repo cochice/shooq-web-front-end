@@ -636,7 +636,7 @@ function HomeContent() {
                                             )}
                                         </div>
 
-                                        {post.content || (post.optimizedImagesList && post.optimizedImagesList.length > 0) || post.cloudinary_url ? (
+                                        {(post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
                                             <h2
                                                 className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
                                                     }`}
