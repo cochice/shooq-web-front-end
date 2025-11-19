@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
-import ImageCarousel from '@/components/ImageCarousel';
+import FullscreenImageViewer from '@/components/FullscreenImageViewer';
 import { getSiteLogo } from '@/constants/content';
 
 interface PostDetailPageProps {
@@ -22,6 +22,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
     const [error, setError] = useState<string | null>(null);
     const [isDarkMode, setIsDarkMode] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+    const [selectedImageIndex, setSelectedImageIndex] = useState<number | null>(null);
 
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
@@ -291,12 +292,29 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                 </h1>
 
-                {/* 이미지 캐러셀 */}
+                {/* 이미지 표시 */}
                 {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
-                    <ImageCarousel
-                        images={post.optimizedImagesList}
-                        title={post.title}
-                    />
+                    <div className="mb-6">
+                        <div className="space-y-4">
+                            {post.optimizedImagesList.map((image, index) => (
+                                image.cloudinary_url && (
+                                    <div key={index} className="w-full">
+                                        <img
+                                            src={image.cloudinary_url}
+                                            alt={`${post.title} - 이미지 ${index + 1}`}
+                                            className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                            loading="lazy"
+                                            onClick={() => setSelectedImageIndex(index)}
+                                            onError={(e) => {
+                                                const target = e.target as HTMLImageElement;
+                                                target.style.display = 'none';
+                                            }}
+                                        />
+                                    </div>
+                                )
+                            ))}
+                        </div>
+                    </div>
                 )}
 
                 {/* 게시글 내용 */}
@@ -337,6 +355,16 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                         </div>
                     )}
                 </div>
+
+                {/* 전체화면 이미지 뷰어 */}
+                {selectedImageIndex !== null && post.optimizedImagesList && (
+                    <FullscreenImageViewer
+                        images={post.optimizedImagesList}
+                        initialIndex={selectedImageIndex}
+                        isOpen={selectedImageIndex !== null}
+                        onClose={() => setSelectedImageIndex(null)}
+                    />
+                )}
                 </main>
             </div>
         </div>
