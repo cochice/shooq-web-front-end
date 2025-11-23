@@ -7,6 +7,7 @@ import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
 import ImageCarousel from '@/components/ImageCarousel';
+import PostDetailOverlay from '@/components/PostDetailOverlay';
 import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
@@ -15,6 +16,7 @@ function HomeContent() {
     const searchParams = useSearchParams();
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
     const keywordParam = searchParams.get('keyword'); // GET 파라미터에서 keyword 값 가져오기
+    const postIdParam = searchParams.get('postId'); // GET 파라미터에서 postId 값 가져오기
 
     const [posts, setPosts] = useState<SiteBbsInfo[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -344,10 +346,11 @@ function HomeContent() {
                 keywordParam,
                 timestamp: new Date().toISOString()
             });
-            // URL 파라미터에서 받은 keyword 우선 사용
+
             const searchKeywordToUse = keywordParam || (isSearchMode ? searchKeywordRef.current : undefined);
             console.log('🔍 Initial load with keyword:', { keywordParam, searchKeywordToUse, isSearchMode });
             loadInitialData(searchKeywordToUse, true); // isInitialLoad = true
+
             isInitialLoadRef.current = true;
         }
     }, [isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam, isSearchMode]);
@@ -642,7 +645,10 @@ function HomeContent() {
                                                     }`}
                                                 onClick={() => {
                                                     markPostAsRead(postId);
-                                                    router.push(`/post/${postId}`);
+                                                    // 쿼리 파라미터로 상세뷰 열기
+                                                    const params = new URLSearchParams(searchParams.toString());
+                                                    params.set('postId', postId);
+                                                    router.push(`/?${params.toString()}`, { scroll: false });
                                                 }}
                                             >
                                                 {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
@@ -766,6 +772,22 @@ function HomeContent() {
 
                 </main>
             </div>
+
+            {/* 상세뷰 오버레이 - 쿼리 파라미터로 제어 */}
+            {postIdParam && (
+                <PostDetailOverlay
+                    postId={postIdParam}
+                    isDarkMode={isDarkMode}
+                    onToggleDarkMode={toggleDarkMode}
+                    onClose={() => {
+                        // postId 파라미터만 제거하고 나머지는 유지
+                        const params = new URLSearchParams(searchParams.toString());
+                        params.delete('postId');
+                        const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+                        router.push(newUrl, { scroll: false });
+                    }}
+                />
+            )}
 
         </div>
     );

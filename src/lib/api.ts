@@ -5,6 +5,7 @@ export interface OptimizedImages {
   id: number;
   cloudinary_url?: string;
   no?: number;
+  media_type?: 'image' | 'video'; // 미디어 타입 구분 (기본값: image)
 }
 
 export interface SiteBbsInfo {

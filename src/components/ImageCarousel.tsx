@@ -28,6 +28,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [fullscreenSwiper, setFullscreenSwiper] = useState<SwiperType | null>(null);
     const [maxHeight, setMaxHeight] = useState<number>(0);
     const [containerWidth, setContainerWidth] = useState<number>(0);
+    const [videoDimensions, setVideoDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
 
     const openFullscreen = (index: number) => {
         setFullscreenIndex(index);
@@ -186,6 +187,66 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         }
     };
 
+    const handleVideoLoad = (e: React.SyntheticEvent<HTMLVideoElement>, index: number) => {
+        const video = e.currentTarget;
+        const dimensions = { width: video.videoWidth, height: video.videoHeight };
+
+        // 비디오 dimensions 저장 (이미지와 동일한 로직 적용)
+        setVideoDimensions(prev => {
+            const newDimensions = {
+                ...prev,
+                [index]: dimensions
+            };
+            return newDimensions;
+        });
+
+        // imageDimensions에도 추가하여 높이 계산에 포함
+        setImageDimensions(prev => {
+            const newDimensions = {
+                ...prev,
+                [index]: dimensions
+            };
+
+            if (containerWidth === 0) {
+                return newDimensions;
+            }
+
+            const heights = Object.values(newDimensions).map(dim => {
+                const aspectRatio = dim.height / dim.width;
+                const widthRatio = containerWidth / dim.width;
+                let displayHeight = dim.height * widthRatio;
+
+                if (aspectRatio >= 2.5) {
+                    displayHeight = Math.min(displayHeight, 1000);
+                } else if (dim.height > 1000) {
+                    displayHeight = Math.min(displayHeight, 600);
+                } else {
+                    displayHeight = Math.min(displayHeight, 800);
+                }
+
+                return displayHeight;
+            });
+
+            const calculatedMaxHeight = Math.max(...heights, 0);
+            const adjustedHeight = Math.ceil(calculatedMaxHeight * 1.01);
+            setMaxHeight(adjustedHeight);
+
+            return newDimensions;
+        });
+    };
+
+    const handleVideoError = (e: React.SyntheticEvent<HTMLVideoElement>, index: number) => {
+        const target = e.currentTarget;
+
+        // 첫 번째 비디오가 로드 실패하면 전체 캐러셀 숨김
+        if (index === 0) {
+            setShouldHide(true);
+        } else {
+            // 다른 비디오는 개별적으로 숨김
+            target.style.display = 'none';
+        }
+    };
+
 
     return (
         <div className="relative mb-3 group max-w-3xl">
@@ -219,6 +280,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 >
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
+                        const isVideo = image.media_type === 'video';
                         let maxHeightClass = 'max-h-[600px]';
                         let isTooTall = false;
 
@@ -239,21 +301,38 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                             <SwiperSlide key={index}>
                                 <div className={`w-full h-full flex ${isTooTall ? 'items-start overflow-hidden' : 'items-center'} justify-center`}>
                                     {/* 긴 이미지 안내 메시지 */}
-                                    {isTooTall && (
+                                    {isTooTall && !isVideo && (
                                         <div className="absolute top-2 left-1/2 -translate-x-1/2 bg-black/70 text-white px-3 py-1.5 rounded-md text-xs z-10 pointer-events-none">
                                             클릭하여 전체 이미지 보기
                                         </div>
                                     )}
-                                    <img
-                                        src={image.cloudinary_url}
-                                        alt={`이미지 ${index + 1}`}
-                                        className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                            }`}
-                                        loading="lazy"
-                                        onClick={() => openFullscreen(index)}
-                                        onLoad={(e) => handleImageLoad(e, index)}
-                                        onError={(e) => handleImageError(e, index)}
-                                    />
+                                    {isVideo ? (
+                                        <video
+                                            src={image.cloudinary_url}
+                                            className={`w-full h-auto object-contain cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                }`}
+                                            controls
+                                            muted
+                                            autoPlay
+                                            loop
+                                            playsInline
+                                            preload="metadata"
+                                            onClick={() => openFullscreen(index)}
+                                            onLoadedMetadata={(e) => handleVideoLoad(e, index)}
+                                            onError={(e) => handleVideoError(e, index)}
+                                        />
+                                    ) : (
+                                        <img
+                                            src={image.cloudinary_url}
+                                            alt={`이미지 ${index + 1}`}
+                                            className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                }`}
+                                            loading="lazy"
+                                            onClick={() => openFullscreen(index)}
+                                            onLoad={(e) => handleImageLoad(e, index)}
+                                            onError={(e) => handleImageError(e, index)}
+                                        />
+                                    )}
                                 </div>
                             </SwiperSlide>
                         );
@@ -326,12 +405,28 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                         >
                             {images.map((image, index) => {
                                 const dimension = imageDimensions[index];
+                                const isVideo = image.media_type === 'video';
                                 const aspectRatio = dimension ? dimension.height / dimension.width : 0;
                                 const isTooTall = aspectRatio >= 2.5;
 
                                 return (
                                     <SwiperSlide key={index}>
-                                        {isTooTall ? (
+                                        {isVideo ? (
+                                            // 비디오: 전체화면에서 큰 사이즈로 재생
+                                            <div className="w-full h-full flex items-center justify-center px-8 py-4">
+                                                <video
+                                                    src={image.cloudinary_url}
+                                                    className="max-w-full max-h-full object-contain"
+                                                    controls
+                                                    muted
+                                                    autoPlay
+                                                    loop
+                                                    playsInline
+                                                    preload="metadata"
+                                                    style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+                                                />
+                                            </div>
+                                        ) : isTooTall ? (
                                             // 긴 이미지: 스크롤 가능, Zoom 비활성화
                                             <div className="w-full h-full flex items-start justify-center overflow-auto px-8 py-4">
                                                 <img
