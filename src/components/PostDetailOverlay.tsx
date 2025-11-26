@@ -14,14 +14,6 @@ interface PostDetailOverlayProps {
     onToggleDarkMode: () => void;
 }
 
-// YouTube URL에 음소거 파라미터 추가
-const addYouTubeMuteParam = (url: string) => {
-    if (!url) return url;
-    const urlObj = new URL(url);
-    urlObj.searchParams.set('mute', '1');
-    return urlObj.toString();
-};
-
 export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggleDarkMode }: PostDetailOverlayProps) {
     const [post, setPost] = useState<SiteBbsInfo | null>(null);
     const [loading, setLoading] = useState(true);
@@ -236,60 +228,6 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
 
                             {/* Shooq 스타일 컨텐츠 영역 */}
                             <div className="shooq-content mb-6 dark:bg-gray-800">
-                                {/* 이미지 표시 */}
-                                {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
-                                    <>
-                                        {post.optimizedImagesList.map((image, index) => {
-                                            const isVideo = image.media_type === 'video';
-                                            const isYouTube = image.cloudinary_url?.includes('youtube.com') || image.cloudinary_url?.includes('youtu.be');
-
-                                            return (
-                                                image.cloudinary_url && (
-                                                    <div key={index}>
-                                                        {isVideo ? (
-                                                            isYouTube ? (
-                                                                <iframe
-                                                                    src={addYouTubeMuteParam(image.cloudinary_url || '')}
-                                                                    className="shooq-youtube"
-                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                                                                    allowFullScreen
-                                                                />
-                                                            ) : (
-                                                                <video
-                                                                    src={image.cloudinary_url}
-                                                                    className="w-full h-auto block m-0 border-none"
-                                                                    controls
-                                                                    muted
-                                                                    autoPlay
-                                                                    loop
-                                                                    playsInline
-                                                                    preload="metadata"
-                                                                    onError={(e) => {
-                                                                        const target = e.target as HTMLVideoElement;
-                                                                        target.style.display = 'none';
-                                                                    }}
-                                                                />
-                                                            )
-                                                        ) : (
-                                                            <img
-                                                                src={image.cloudinary_url}
-                                                                alt={`${post.title} - 이미지 ${index + 1}`}
-                                                                className="w-full h-auto block m-0 border-none cursor-pointer hover:opacity-90 transition-opacity"
-                                                                loading="lazy"
-                                                                onClick={() => setSelectedImageIndex(index)}
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLImageElement;
-                                                                    target.style.display = 'none';
-                                                                }}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                )
-                                            );
-                                        })}
-                                    </>
-                                )}
-
                                 {/* 게시글 내용 */}
                                 {post.content && (
                                     <div
