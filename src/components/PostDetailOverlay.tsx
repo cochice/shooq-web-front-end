@@ -226,35 +226,47 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                                 {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
                             </h1>
 
-                            {/* 이미지 표시 */}
-                            {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
-                                <div className="mb-6">
-                                    <div className="space-y-4">
+                            {/* Shooq 스타일 컨텐츠 영역 */}
+                            <div className="shooq-content mb-6 dark:bg-gray-800">
+                                {/* 이미지 표시 */}
+                                {(post.optimizedImagesList && post.optimizedImagesList.length > 0) && (
+                                    <>
                                         {post.optimizedImagesList.map((image, index) => {
                                             const isVideo = image.media_type === 'video';
+                                            const isYouTube = image.cloudinary_url?.includes('youtube.com') || image.cloudinary_url?.includes('youtu.be');
+
                                             return (
                                                 image.cloudinary_url && (
-                                                    <div key={index} className="w-full">
+                                                    <div key={index}>
                                                         {isVideo ? (
-                                                            <video
-                                                                src={image.cloudinary_url}
-                                                                className="w-full h-auto rounded-lg"
-                                                                controls
-                                                                muted
-                                                                autoPlay
-                                                                loop
-                                                                playsInline
-                                                                preload="metadata"
-                                                                onError={(e) => {
-                                                                    const target = e.target as HTMLVideoElement;
-                                                                    target.style.display = 'none';
-                                                                }}
-                                                            />
+                                                            isYouTube ? (
+                                                                <iframe
+                                                                    src={image.cloudinary_url}
+                                                                    className="shooq-youtube"
+                                                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                                    allowFullScreen
+                                                                />
+                                                            ) : (
+                                                                <video
+                                                                    src={image.cloudinary_url}
+                                                                    className="w-full h-auto block m-0 border-none"
+                                                                    controls
+                                                                    muted
+                                                                    autoPlay
+                                                                    loop
+                                                                    playsInline
+                                                                    preload="metadata"
+                                                                    onError={(e) => {
+                                                                        const target = e.target as HTMLVideoElement;
+                                                                        target.style.display = 'none';
+                                                                    }}
+                                                                />
+                                                            )
                                                         ) : (
                                                             <img
                                                                 src={image.cloudinary_url}
                                                                 alt={`${post.title} - 이미지 ${index + 1}`}
-                                                                className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                                                className="w-full h-auto block m-0 border-none cursor-pointer hover:opacity-90 transition-opacity"
                                                                 loading="lazy"
                                                                 onClick={() => setSelectedImageIndex(index)}
                                                                 onError={(e) => {
@@ -267,19 +279,17 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                                                 )
                                             );
                                         })}
-                                    </div>
-                                </div>
-                            )}
+                                    </>
+                                )}
 
-                            {/* 게시글 내용 */}
-                            {post.content && (
-                                <div className="mb-6">
+                                {/* 게시글 내용 */}
+                                {post.content && (
                                     <div
                                         className="prose dark:prose-invert max-w-none text-gray-900 dark:text-gray-100"
                                         dangerouslySetInnerHTML={{ __html: post.content }}
                                     />
-                                </div>
-                            )}
+                                )}
+                            </div>
 
                             {/* 통계 */}
                             <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 pt-4 border-t border-gray-200 dark:border-gray-700">
