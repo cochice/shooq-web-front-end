@@ -24,3 +24,47 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Shooq content styles */
+.shooq-content {
+    max-width: 100%;
+    background: #fff;
+}
+
+.shooq-content img {
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0;
+    border: none;
+}
+
+/* 이미지 사이 얇은 구분선 */
+.shooq-content img:not(:last-child) {
+    border-bottom: 1px solid #efefef;
+}
+
+.shooq-content .shooq-youtube {
+    width: calc(100% - 32px);
+    aspect-ratio: 16 / 9;
+    margin: 16px auto;
+    display: block;
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.shooq-content p {
+    padding: 16px 20px;
+    margin: 0;
+    line-height: 1.6;
+    font-size: 15px;
+    color: #262626;
+}
+
+@media (min-width: 769px) {
+    .shooq-content {
+        max-width: 600px;
+        margin: 0 auto;
+    }
+}

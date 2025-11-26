@@ -14,6 +14,14 @@ interface PostDetailOverlayProps {
     onToggleDarkMode: () => void;
 }
 
+// YouTube URL에 음소거 파라미터 추가
+const addYouTubeMuteParam = (url: string) => {
+    if (!url) return url;
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('mute', '1');
+    return urlObj.toString();
+};
+
 export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggleDarkMode }: PostDetailOverlayProps) {
     const [post, setPost] = useState<SiteBbsInfo | null>(null);
     const [loading, setLoading] = useState(true);
@@ -241,7 +249,7 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                                                         {isVideo ? (
                                                             isYouTube ? (
                                                                 <iframe
-                                                                    src={image.cloudinary_url}
+                                                                    src={addYouTubeMuteParam(image.cloudinary_url || '')}
                                                                     className="shooq-youtube"
                                                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                                                                     allowFullScreen

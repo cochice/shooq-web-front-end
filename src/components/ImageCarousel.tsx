@@ -18,6 +18,14 @@ interface ImageCarouselProps {
     title?: string;
 }
 
+// YouTube URL에 음소거 파라미터 추가
+const addYouTubeMuteParam = (url: string) => {
+    if (!url) return url;
+    const urlObj = new URL(url);
+    urlObj.searchParams.set('mute', '1');
+    return urlObj.toString();
+};
+
 export default function ImageCarousel({ images, isAdultContent = false, title }: ImageCarouselProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [imageDimensions, setImageDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
@@ -252,7 +260,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         <div className="relative mb-3 group max-w-3xl">
             {/* 메인 이미지 캐러셀 - Swiper로 구현 */}
             <div
-                className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+                className="relative overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 group"
                 style={maxHeight > 0 ? { height: `${maxHeight}px` } : {}}
             >
                 <Swiper
@@ -281,6 +289,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
                         const isVideo = image.media_type === 'video';
+                        const isYouTube = image.cloudinary_url?.includes('youtube.com') || image.cloudinary_url?.includes('youtu.be');
                         let maxHeightClass = 'max-h-[600px]';
                         let isTooTall = false;
 
@@ -307,20 +316,31 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                         </div>
                                     )}
                                     {isVideo ? (
-                                        <video
-                                            src={image.cloudinary_url}
-                                            className={`w-full h-auto object-contain cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
-                                                }`}
-                                            controls
-                                            muted
-                                            autoPlay
-                                            loop
-                                            playsInline
-                                            preload="metadata"
-                                            onClick={() => openFullscreen(index)}
-                                            onLoadedMetadata={(e) => handleVideoLoad(e, index)}
-                                            onError={(e) => handleVideoError(e, index)}
-                                        />
+                                        isYouTube ? (
+                                            <iframe
+                                                src={addYouTubeMuteParam(image.cloudinary_url || '')}
+                                                className={`w-full ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''}`}
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                allowFullScreen
+                                                title={`YouTube video ${index + 1}`}
+                                                style={{ aspectRatio: '16/9' }}
+                                            />
+                                        ) : (
+                                            <video
+                                                src={image.cloudinary_url}
+                                                className={`w-full h-auto object-contain cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                    }`}
+                                                controls
+                                                muted
+                                                autoPlay
+                                                loop
+                                                playsInline
+                                                preload="metadata"
+                                                onClick={() => openFullscreen(index)}
+                                                onLoadedMetadata={(e) => handleVideoLoad(e, index)}
+                                                onError={(e) => handleVideoError(e, index)}
+                                            />
+                                        )
                                     ) : (
                                         <img
                                             src={image.cloudinary_url}
@@ -344,6 +364,51 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     <div className="absolute top-2 right-2 bg-black/60 text-white px-2 py-1 rounded-md text-xs z-10">
                         {currentIndex + 1} / {images.length}
                     </div>
+                )}
+
+                {/* 네비게이션 버튼 */}
+                {images.length > 1 && (
+                    <>
+                        {/* 왼쪽 클릭 영역 보호 (iframe 클릭 차단) */}
+                        <div
+                            className="absolute left-0 top-0 bottom-0 w-16 z-20 pointer-events-auto"
+                            onClick={() => mainSwiper?.slidePrev()}
+                            style={{ display: currentIndex === 0 ? 'none' : 'block' }}
+                        />
+
+                        {/* 오른쪽 클릭 영역 보호 (iframe 클릭 차단) */}
+                        <div
+                            className="absolute right-0 top-0 bottom-0 w-16 z-20 pointer-events-auto"
+                            onClick={() => mainSwiper?.slideNext()}
+                            style={{ display: currentIndex === images.length - 1 ? 'none' : 'block' }}
+                        />
+
+                        {/* 이전 버튼 */}
+                        <button
+                            type="button"
+                            onClick={() => mainSwiper?.slidePrev()}
+                            className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity disabled:opacity-0"
+                            disabled={currentIndex === 0}
+                            aria-label="이전 이미지"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                            </svg>
+                        </button>
+
+                        {/* 다음 버튼 */}
+                        <button
+                            type="button"
+                            onClick={() => mainSwiper?.slideNext()}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-30 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity disabled:opacity-0"
+                            disabled={currentIndex === images.length - 1}
+                            aria-label="다음 이미지"
+                        >
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                            </svg>
+                        </button>
+                    </>
                 )}
             </div>
 
@@ -406,26 +471,41 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                             {images.map((image, index) => {
                                 const dimension = imageDimensions[index];
                                 const isVideo = image.media_type === 'video';
+                                const isYouTube = image.cloudinary_url?.includes('youtube.com') || image.cloudinary_url?.includes('youtu.be');
                                 const aspectRatio = dimension ? dimension.height / dimension.width : 0;
                                 const isTooTall = aspectRatio >= 2.5;
 
                                 return (
                                     <SwiperSlide key={index}>
                                         {isVideo ? (
-                                            // 비디오: 전체화면에서 큰 사이즈로 재생
-                                            <div className="w-full h-full flex items-center justify-center px-8 py-4">
-                                                <video
-                                                    src={image.cloudinary_url}
-                                                    className="max-w-full max-h-full object-contain"
-                                                    controls
-                                                    muted
-                                                    autoPlay
-                                                    loop
-                                                    playsInline
-                                                    preload="metadata"
-                                                    style={{ maxWidth: '90vw', maxHeight: '90vh' }}
-                                                />
-                                            </div>
+                                            isYouTube ? (
+                                                // YouTube: 전체화면에서 iframe으로 재생
+                                                <div className="w-full h-full flex items-center justify-center px-8 py-4">
+                                                    <iframe
+                                                        src={addYouTubeMuteParam(image.cloudinary_url || '')}
+                                                        className="max-w-full max-h-full"
+                                                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                                        allowFullScreen
+                                                        title={`YouTube video ${index + 1}`}
+                                                        style={{ width: '90vw', height: '50.625vw', maxHeight: '90vh' }}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                // 비디오: 전체화면에서 큰 사이즈로 재생
+                                                <div className="w-full h-full flex items-center justify-center px-8 py-4">
+                                                    <video
+                                                        src={image.cloudinary_url}
+                                                        className="max-w-full max-h-full object-contain"
+                                                        controls
+                                                        muted
+                                                        autoPlay
+                                                        loop
+                                                        playsInline
+                                                        preload="metadata"
+                                                        style={{ maxWidth: '90vw', maxHeight: '90vh' }}
+                                                    />
+                                                </div>
+                                            )
                                         ) : isTooTall ? (
                                             // 긴 이미지: 스크롤 가능, Zoom 비활성화
                                             <div className="w-full h-full flex items-start justify-center overflow-auto px-8 py-4">
@@ -450,6 +530,43 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                 );
                             })}
                         </Swiper>
+
+                        {/* 전체화면 네비게이션 버튼 */}
+                        {images.length > 1 && (
+                            <>
+                                {/* 이전 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        fullscreenSwiper?.slidePrev();
+                                    }}
+                                    className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                    disabled={fullscreenIndex === 0}
+                                    aria-label="이전 이미지"
+                                >
+                                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
+                                    </svg>
+                                </button>
+
+                                {/* 다음 버튼 */}
+                                <button
+                                    type="button"
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        fullscreenSwiper?.slideNext();
+                                    }}
+                                    className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center z-50 transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+                                    disabled={fullscreenIndex === images.length - 1}
+                                    aria-label="다음 이미지"
+                                >
+                                    <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
+                                    </svg>
+                                </button>
+                            </>
+                        )}
                     </div>
                 </div>
             )}
