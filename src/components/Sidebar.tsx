@@ -103,10 +103,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="font-medium">주간집계</span>
                                 </button>
 
-                                {/* 최신 뉴스 버튼 */}
+                                {/* 최신 뉴스 버튼 - hidden */}
                                 <button
                                     type="button"
-                                    className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
+                                    className="hidden flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
                                     onClick={() => {
                                         onNavigate?.('/news');
                                         onCloseSidebar?.();
@@ -128,10 +128,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     {/* 커뮤니티 섹션 */}
                                     <div>
                                         <div className="flex items-center justify-between mb-3">
-                                            <h3 className="font-semibold text-gray-300">커뮤니티 ({SITE_CATEGORIES.community.length}개)</h3>
+                                            <h3 className="font-semibold text-gray-300">커뮤니티 ({SITE_CATEGORIES.community.filter(site => site.code !== 'YouTube').length}개)</h3>
                                         </div>
                                         <div className="space-y-2">
-                                            {SITE_CATEGORIES.community.map((site) => (
+                                            {SITE_CATEGORIES.community.filter(site => site.code !== 'YouTube').map((site) => (
                                                 <button
                                                     key={site.code}
                                                     type="button"
@@ -216,10 +216,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <span className="font-medium">주간집계</span>
                         </button>
 
-                        {/* 최신 뉴스 버튼 */}
+                        {/* 최신 뉴스 버튼 - hidden */}
                         <button
                             type="button"
-                            className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                            className="hidden flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             onClick={() => {
                                 onNavigate?.('/news');
                                 onCloseSidebar?.();
@@ -249,10 +249,10 @@ const Sidebar: React.FC<SidebarProps> = ({
                             {/* 커뮤니티 섹션 */}
                             <div>
                                 <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold text-gray-900 dark:text-white">커뮤니티 ({SITE_CATEGORIES.community.length}개)</h3>
+                                    <h3 className="font-semibold text-gray-900 dark:text-white">커뮤니티 ({SITE_CATEGORIES.community.filter(site => site.code !== 'YouTube').length}개)</h3>
                                 </div>
                                 <div className="space-y-2">
-                                    {SITE_CATEGORIES.community.map((site) => (
+                                    {SITE_CATEGORIES.community.filter(site => site.code !== 'YouTube').map((site) => (
                                         <button
                                             key={site.code}
                                             type="button"

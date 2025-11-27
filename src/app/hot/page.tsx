@@ -289,25 +289,6 @@ export default function Home() {
                         </h2>
                     )}
 
-                    {post.content && (
-                        <p className={`text-sm mb-3 ${isRead ? 'text-gray-500 dark:text-gray-500' : 'text-gray-700 dark:text-gray-300'
-                            }`}>
-                            {post.url ? (
-                                <a
-                                    href={post.url}
-                                    target={isNewWindowMode ? "_blank" : "_self"}
-                                    rel={isNewWindowMode ? "noopener noreferrer" : undefined}
-                                    className="hover:text-orange-500 cursor-pointer"
-                                    onClick={() => markPostAsRead(postId)}
-                                >
-                                    {post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)}
-                                </a>
-                            ) : (
-                                post.content.length > 200 ? `${decodeHtmlEntities(post.content).substring(0, 200)}...` : decodeHtmlEntities(post.content)
-                            )}
-                        </p>
-                    )}
-
                     {/* YouTube 비디오 또는 이미지 캐러셀 */}
                     {post.site === 'YouTube' && post.url ? (
                         <div className="mb-3">
