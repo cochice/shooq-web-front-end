@@ -8,6 +8,7 @@ import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
 import ImageCarousel from '@/components/ImageCarousel';
 import PostDetailOverlay from '@/components/PostDetailOverlay';
+import TrendingCommunities from '@/components/TrendingCommunities';
 import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
@@ -139,15 +140,10 @@ function HomeContent() {
             setShowTopLoadingBar(true);
             setError(null);
 
-            const postsResult = await ApiService.getPosts(
+            const postsResult = await ApiService.getPopularPosts(
                 1,
                 10,
-                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
-                searchQuery,
-                undefined, // author
                 undefined, // 첫 조회 시에는 maxNo 없음
-                sortBy, // 정렬 기준
-                sortBy === 'top' ? topPeriod : undefined // 추천순일 때만 기간 전달
             );
 
             setPosts(postsResult.data);
@@ -173,7 +169,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [siteParam, sortBy, topPeriod]); // sortBy, topPeriod 의존성 추가
+    }, [siteParam]); // sortBy, topPeriod 의존성 추가
 
 
     // 더 많은 포스트 로드
@@ -188,15 +184,10 @@ function HomeContent() {
                 setShowTopLoadingBar(true);
             }
 
-            const result = await ApiService.getPosts(
+            const result = await ApiService.getPopularPosts(
                 currentPage + 1,
                 10,
-                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
-                isSearchMode ? searchKeywordRef.current : undefined,
-                undefined, // author
                 maxNo, // 중복 방지를 위해 maxNo 전달
-                sortBy, // 정렬 기준
-                sortBy === 'top' ? topPeriod : undefined // 추천순일 때만 기간 전달
             );
 
             setPosts(prev => [...prev, ...result.data]);
@@ -215,7 +206,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore, isSearchMode, siteParam, sortBy, topPeriod]);
+    }, [currentPage, loading, hasMore]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
     const handleHomeClick = () => {
@@ -521,24 +512,15 @@ function HomeContent() {
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">
-                    {/* Page Title */}
-                    <div className="mb-6">
-                        <h1
-                            className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer"
-                            onClick={() => {
-                                // 상태 초기화 후 데이터 다시 로드
-                                setPosts([]);
-                                setCurrentPage(1);
-                                setHasMore(true);
-                                setError(null);
-                                window.scrollTo({ top: 0, behavior: 'smooth' });
-                                loadInitialData(undefined, true);
-                            }}
-                        >
-                            커뮤니티 인기글 (핫이슈){siteParam ? ` - ${siteParam}` : ''}
-                        </h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-1">인기 커뮤니티의 최신 이슈를 확인하세요</p>
-                    </div>
+                    {/* Trending Communities - Reddit Style */}
+                    <TrendingCommunities
+                        onPostClick={(postId) => {
+                            // 쿼리 파라미터로 상세뷰 열기
+                            const params = new URLSearchParams(searchParams.toString());
+                            params.set('postId', postId);
+                            router.push(`/popular?${params.toString()}`, { scroll: false });
+                        }}
+                    />
 
                     {/* 정렬 드롭다운 - Reddit 스타일 */}
                     <div className="mb-4 relative issue-dropdown">
@@ -752,148 +734,147 @@ function HomeContent() {
                                     }`}>
                                     <div className="p-4 flex flex-col items-center">
                                         <div className="w-full max-w-3xl">
-                                        <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                            {post.site && (
-                                                <>
-                                                    <div className="flex items-center space-x-2">
-                                                        <div
-                                                            className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                                                            style={{
-                                                                backgroundColor: getSiteLogo(post.site).bgColor,
-                                                                color: getSiteLogo(post.site).textColor
-                                                            }}
-                                                        >
-                                                            {getSiteLogo(post.site).letter}
+                                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                {post.site && (
+                                                    <>
+                                                        <div className="flex items-center space-x-2">
+                                                            <div
+                                                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                                style={{
+                                                                    backgroundColor: getSiteLogo(post.site).bgColor,
+                                                                    color: getSiteLogo(post.site).textColor
+                                                                }}
+                                                            >
+                                                                {getSiteLogo(post.site).letter}
+                                                            </div>
+                                                            <span className="font-semibold">{post.site}</span>
                                                         </div>
-                                                        <span className="font-semibold">{post.site}</span>
-                                                    </div>
-                                                    <span className="mx-1">•</span>
-                                                </>
-                                            )}
-                                            {post.author && (
-                                                <>
-                                                    <span><span className="hidden sm:inline">Posted by </span>{post.author}</span>
-                                                    <span className="mx-1">•</span>
-                                                </>
-                                            )}
-                                            <span>{formatDate(post.date)}</span>
-                                            {post.url && (
-                                                <>
-                                                    <span className="mx-1">•</span>
-                                                    <a
-                                                        href={post.url}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-orange-500 hover:text-orange-600 flex items-center"
-                                                        onClick={() => markPostAsRead(postId)}
-                                                    >
-                                                        원본 링크
-                                                        <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                        </svg>
-                                                    </a>
-                                                </>
-                                            )}
-                                        </div>
-
-                                        {(post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
-                                            <h2
-                                                className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                                                    }`}
-                                                onClick={() => {
-                                                    markPostAsRead(postId);
-                                                    // 쿼리 파라미터로 상세뷰 열기
-                                                    const params = new URLSearchParams(searchParams.toString());
-                                                    params.set('postId', postId);
-                                                    router.push(`/?${params.toString()}`, { scroll: false });
-                                                }}
-                                            >
-                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                                            </h2>
-                                        ) : post.url ? (
-                                            <a
-                                                href={post.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                                                    }`}
-                                                onClick={() => markPostAsRead(postId)}
-                                            >
-                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                                                <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                </svg>
-                                            </a>
-                                        ) : (
-                                            <h2 className={`text-lg font-semibold mb-2 ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
-                                                }`}>
-                                                {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
-                                            </h2>
-                                        )}
-
-                                        {/* YouTube 비디오 또는 이미지 캐러셀 */}
-                                        {post.site === 'YouTube' && post.url ? (
-                                            <div className="mb-3">
-                                                <YouTubeVideo
-                                                    url={post.url}
-                                                    className={isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''}
-                                                />
+                                                        <span className="mx-1">•</span>
+                                                    </>
+                                                )}
+                                                {post.author && (
+                                                    <>
+                                                        <span><span className="hidden sm:inline">Posted by </span>{post.author}</span>
+                                                        <span className="mx-1">•</span>
+                                                    </>
+                                                )}
+                                                <span>{formatDate(post.date)}</span>
+                                                {post.url && (
+                                                    <>
+                                                        <span className="mx-1">•</span>
+                                                        <a
+                                                            href={post.url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-orange-500 hover:text-orange-600 flex items-center"
+                                                            onClick={() => markPostAsRead(postId)}
+                                                        >
+                                                            원본 링크
+                                                            <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                            </svg>
+                                                        </a>
+                                                    </>
+                                                )}
                                             </div>
-                                        ) : (post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
-                                            <ImageCarousel
-                                                images={post.optimizedImagesList}
-                                                isAdultContent={isAdultContent}
-                                                title={post.title}
-                                            />
-                                        ) : post.cloudinary_url && (
-                                            <div className="mb-3">
-                                                <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                    <img
-                                                        src={post.cloudinary_url}
-                                                        alt="썸네일"
-                                                        className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${
-                                                            isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+
+                                            {(post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
+                                                <h2
+                                                    className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
                                                         }`}
-                                                        loading="lazy"
-                                                        onError={(e) => {
-                                                            const target = e.target as HTMLImageElement;
-                                                            target.style.display = 'none';
-                                                        }}
+                                                    onClick={() => {
+                                                        markPostAsRead(postId);
+                                                        // 쿼리 파라미터로 상세뷰 열기
+                                                        const params = new URLSearchParams(searchParams.toString());
+                                                        params.set('postId', postId);
+                                                        router.push(`/popular?${params.toString()}`, { scroll: false });
+                                                    }}
+                                                >
+                                                    {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                                </h2>
+                                            ) : post.url ? (
+                                                <a
+                                                    href={post.url}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className={`text-lg font-semibold mb-2 hover:text-orange-500 cursor-pointer block ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                                        }`}
+                                                    onClick={() => markPostAsRead(postId)}
+                                                >
+                                                    {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                                    <svg className="inline-block ml-1 w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                    </svg>
+                                                </a>
+                                            ) : (
+                                                <h2 className={`text-lg font-semibold mb-2 ${isRead ? 'text-gray-500 dark:text-gray-400' : 'text-gray-900 dark:text-white'
+                                                    }`}>
+                                                    {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
+                                                </h2>
+                                            )}
+
+                                            {/* YouTube 비디오 또는 이미지 캐러셀 */}
+                                            {post.site === 'YouTube' && post.url ? (
+                                                <div className="mb-3">
+                                                    <YouTubeVideo
+                                                        url={post.url}
+                                                        className={isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''}
                                                     />
                                                 </div>
-                                            </div>
-                                        )}
+                                            ) : (post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
+                                                <ImageCarousel
+                                                    images={post.optimizedImagesList}
+                                                    isAdultContent={isAdultContent}
+                                                    title={post.title}
+                                                />
+                                            ) : post.cloudinary_url && (
+                                                <div className="mb-3">
+                                                    <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                                                        <img
+                                                            src={post.cloudinary_url}
+                                                            alt="썸네일"
+                                                            className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                                }`}
+                                                            loading="lazy"
+                                                            onError={(e) => {
+                                                                const target = e.target as HTMLImageElement;
+                                                                target.style.display = 'none';
+                                                            }}
+                                                        />
+                                                    </div>
+                                                </div>
+                                            )}
 
-                                        <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
-                                            {post.likes && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.likes} 추천</span>
-                                                    <span className="sm:hidden">{post.likes}</span>
-                                                </div>
-                                            )}
-                                            {post.reply_num && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.reply_num} 답글</span>
-                                                    <span className="sm:hidden">{post.reply_num}</span>
-                                                </div>
-                                            )}
-                                            {post.views && (
-                                                <div className="flex items-center space-x-1 px-2 py-1">
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                                    </svg>
-                                                    <span className="hidden sm:inline">{post.views} 조회</span>
-                                                    <span className="sm:hidden">{post.views}</span>
-                                                </div>
-                                            )}
-                                        </div>
+                                            <div className="flex flex-wrap items-center gap-2 sm:space-x-4 text-xs text-gray-500 dark:text-gray-400">
+                                                {post.likes && (
+                                                    <div className="flex items-center space-x-1 px-2 py-1">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                                                        </svg>
+                                                        <span className="hidden sm:inline">{post.likes} 추천</span>
+                                                        <span className="sm:hidden">{post.likes}</span>
+                                                    </div>
+                                                )}
+                                                {post.reply_num && (
+                                                    <div className="flex items-center space-x-1 px-2 py-1">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                                                        </svg>
+                                                        <span className="hidden sm:inline">{post.reply_num} 답글</span>
+                                                        <span className="sm:hidden">{post.reply_num}</span>
+                                                    </div>
+                                                )}
+                                                {post.views && (
+                                                    <div className="flex items-center space-x-1 px-2 py-1">
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                                        </svg>
+                                                        <span className="hidden sm:inline">{post.views} 조회</span>
+                                                        <span className="sm:hidden">{post.views}</span>
+                                                    </div>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                 </article>
@@ -940,7 +921,7 @@ function HomeContent() {
                         // postId 파라미터만 제거하고 나머지는 유지
                         const params = new URLSearchParams(searchParams.toString());
                         params.delete('postId');
-                        const newUrl = params.toString() ? `/?${params.toString()}` : '/';
+                        const newUrl = params.toString() ? `/popular?${params.toString()}` : '/popular';
                         router.push(newUrl, { scroll: false });
                     }}
                 />

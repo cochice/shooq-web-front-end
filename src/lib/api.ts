@@ -99,6 +99,23 @@ export interface DailySiteStats {
   count: number;
 }
 
+export interface TrendingCommunity {
+  site: string;
+  best_post_no: number;
+  best_post_title?: string;
+  best_post_likes?: number;
+  best_post_replies?: number;
+  best_post_date?: string;
+  best_post_url?: string;
+  best_post_author?: string;
+  best_post_original_date?: string;
+  best_post_views?: number;
+  best_post_content?: string;
+  total_likes?: number;
+  total_replies?: number;
+  optimizedImagesList?: OptimizedImages[];
+}
+
 export class ApiService {
   private static async fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -154,7 +171,9 @@ export class ApiService {
     site?: string,
     keyword?: string,
     author?: string,
-    maxNo?: number
+    maxNo?: number,
+    sortBy?: string,
+    topPeriod?: string
   ): Promise<PagedResult<SiteBbsInfo>> {
     const params = new URLSearchParams({
       page: page.toString(),
@@ -168,12 +187,35 @@ export class ApiService {
     if (keyword) params.append('keyword', keyword);
     if (author) params.append('author', author);
     if (maxNo) params.append('maxNo', maxNo.toString());
+    if (sortBy) params.append('sortBy', sortBy);
+    if (topPeriod) params.append('topPeriod', topPeriod);
 
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts?${params.toString()}`);
   }
 
+    static async getPopularPosts(page: number = 1, pageSize: number = 10, maxNo?: number): Promise<PagedResult<SiteBbsInfo>> {
+        const params = new URLSearchParams({
+            page: page.toString(),
+            pageSize: pageSize.toString()
+        });
+
+        if (maxNo) params.append('maxNo', maxNo.toString());
+        
+        return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts-popular?${params.toString()}`);
+    }
+
   static async getPost(no: number): Promise<SiteBbsInfo> {
-    return this.fetchApi<SiteBbsInfo>(`/posts/${no}`);
+    const post = await this.fetchApi<SiteBbsInfo>(`/posts/${no}`);
+
+    // Humoruniv 사이트의 경우 불필요한 스타일 태그 제거
+    if (post.site === 'Humoruniv' && post.content) {
+      post.content = post.content.replace(
+        /<p>\s*\.body_editor\{[^}]+\}[\s\S]*?<\/p>/gi,
+        ''
+      );
+    }
+
+    return post;
   }
 
  static async getWeek(
@@ -193,11 +235,6 @@ export class ApiService {
 
   static async getSites(): Promise<string[]> {
     return this.fetchApi<string[]>('/sites');
-  }
-
-
-  static async getPopularPosts(count: number = 10): Promise<SiteBbsInfo[]> {
-    return this.fetchApi<SiteBbsInfo[]>(`/popular?count=${count}`);
   }
 
   // 접속 로그 기록
@@ -249,5 +286,10 @@ export class ApiService {
   // 오늘 최신 크롤링 시간 조회
   static async getLatestCrawlTime(): Promise<{ latestCrawlTime: string | null }> {
     return this.fetchApi<{ latestCrawlTime: string | null }>('/admin/latest-crawl-time');
+  }
+
+  // 트렌딩 커뮤니티 조회 (레딧 스타일)
+  static async getTrendingCommunities(limit: number = 6): Promise<TrendingCommunity[]> {
+    return this.fetchApi<TrendingCommunity[]>(`/trending-communities?limit=${limit}`);
   }
 }

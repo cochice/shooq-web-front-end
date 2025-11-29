@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { ApiService, AdminStats, SiteStats, RecentPost, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
+import { ApiService, AdminStats, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -53,17 +53,6 @@ export default function AdminPage() {
     });
     const [statsLoading, setStatsLoading] = useState(true);
 
-    // 사이트별 통계 데이터
-    const [siteStats, setSiteStats] = useState<SiteStats[]>([]);
-    const [siteStatsLoading, setSiteStatsLoading] = useState(true);
-
-    // 크롤링 시간 기준 최근 글 데이터
-    const [recentPostsByCrawl, setRecentPostsByCrawl] = useState<RecentPost[]>([]);
-    const [recentPostsByCrawlLoading, setRecentPostsByCrawlLoading] = useState(true);
-
-    // 컨텐츠 시간 기준 최근 글 데이터
-    const [recentPostsByContent, setRecentPostsByContent] = useState<RecentPost[]>([]);
-    const [recentPostsByContentLoading, setRecentPostsByContentLoading] = useState(true);
 
     // 주간 크롤링 통계 데이터
     const [weeklyCrawlStats, setWeeklyCrawlStats] = useState<DailyCrawlStats[]>([]);
@@ -77,8 +66,6 @@ export default function AdminPage() {
     const [latestCrawlTime, setLatestCrawlTime] = useState<string | null>(null);
     const [latestCrawlTimeLoading, setLatestCrawlTimeLoading] = useState(true);
 
-    // 사이트 관리 펼치기/접기 상태
-    const [showAllSites, setShowAllSites] = useState(false);
 
     // 탭 상태 관리
     const [activeTab, setActiveTab] = useState<'dashboard' | 'content'>('dashboard');
@@ -96,26 +83,17 @@ export default function AdminPage() {
     const loadStats = async () => {
         try {
             setStatsLoading(true);
-            setSiteStatsLoading(true);
-            setRecentPostsByCrawlLoading(true);
-            setRecentPostsByContentLoading(true);
             setWeeklyCrawlStatsLoading(true);
             setDailySiteStatsLoading(true);
             setLatestCrawlTimeLoading(true);
 
             // 관리자 통계 API 호출
             const adminStats = await ApiService.getAdminStats();
-            const siteStatistics = await ApiService.getSiteStats();
-            const recentPostsByCrawlData = await ApiService.getRecentPostsByCrawlTime(5);
-            const recentPostsByContentData = await ApiService.getRecentPostsByContentTime(5);
             const weeklyCrawlStatsData = await ApiService.getWeeklyCrawlStats();
             const dailySiteStatsData = await ApiService.getDailySiteStats();
             const latestCrawlTimeData = await ApiService.getLatestCrawlTime();
 
             setStats(adminStats);
-            setSiteStats(siteStatistics);
-            setRecentPostsByCrawl(recentPostsByCrawlData);
-            setRecentPostsByContent(recentPostsByContentData);
             setWeeklyCrawlStats(weeklyCrawlStatsData);
             setDailySiteStats(dailySiteStatsData);
             setLatestCrawlTime(latestCrawlTimeData.latestCrawlTime);
@@ -124,9 +102,6 @@ export default function AdminPage() {
             setStats(prev => ({ ...prev, systemStatus: '오류' }));
         } finally {
             setStatsLoading(false);
-            setSiteStatsLoading(false);
-            setRecentPostsByCrawlLoading(false);
-            setRecentPostsByContentLoading(false);
             setWeeklyCrawlStatsLoading(false);
             setDailySiteStatsLoading(false);
             setLatestCrawlTimeLoading(false);
@@ -845,7 +820,7 @@ export default function AdminPage() {
                                     : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
                                     }`}
                             >
-                                컨텐츠 제작
+                                컨텐츠 관리
                             </button>
                         </div>
                         {activeTab === 'dashboard' && (
@@ -1114,282 +1089,6 @@ export default function AdminPage() {
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
-                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                    <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>사이트 관리</h3>
-                                    <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링 사이트 상태 및 설정</p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="space-y-4">
-                                        {siteStatsLoading ? (
-                                            <div className="space-y-3">
-                                                {[1, 2, 3, 4].map((i) => (
-                                                    <div key={i} className="animate-pulse">
-                                                        <div className="flex items-center justify-between py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                            <div className="flex items-center space-x-3">
-                                                                <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                                                                <div className="h-4 bg-gray-400 rounded w-24"></div>
-                                                            </div>
-                                                            <div className="h-4 bg-gray-400 rounded w-16"></div>
-                                                        </div>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        ) : siteStats.length > 0 ? (
-                                            <>
-                                                {(showAllSites ? siteStats : siteStats.slice(0, 6)).map((site) => {
-                                                    const lastPostDate = site.lastPostDate ? new Date(site.lastPostDate) : null;
-                                                    const formattedDate = lastPostDate ?
-                                                        `${lastPostDate.getFullYear()}-${(lastPostDate.getMonth() + 1).toString().padStart(2, '0')}-${lastPostDate.getDate().toString().padStart(2, '0')} ${lastPostDate.getHours().toString().padStart(2, '0')}:${lastPostDate.getMinutes().toString().padStart(2, '0')}` :
-                                                        '정보 없음';
-
-                                                    return (
-                                                        <div key={site.site} className="py-3 px-4 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                            <div className="flex items-center justify-between">
-                                                                <div className="flex items-center space-x-3">
-                                                                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.site}</span>
-                                                                </div>
-                                                                <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>활성</span>
-                                                            </div>
-                                                            <div className="ml-6 mt-2 space-y-1">
-                                                                <div className="flex justify-between text-sm">
-                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>전체 글수:</span>
-                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{site.postCount.toLocaleString()}개</span>
-                                                                </div>
-                                                                <div className="flex justify-between text-sm">
-                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>오늘 수집:</span>
-                                                                    <span className={`font-medium ${site.todayCount > 0 ? 'text-orange-500' : (isDarkMode ? 'text-white' : 'text-gray-900')}`}>
-                                                                        {site.todayCount.toLocaleString()}개
-                                                                    </span>
-                                                                </div>
-                                                                <div className="flex justify-between text-sm">
-                                                                    <span className={`${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>마지막 등록:</span>
-                                                                    <span className={`font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>{formattedDate}</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })}
-
-                                                {siteStats.length > 6 && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setShowAllSites(!showAllSites)}
-                                                        className={`w-full py-3 px-4 text-sm font-medium rounded-lg border-2 border-dashed transition-colors ${isDarkMode
-                                                            ? 'border-gray-600 text-gray-300 hover:border-gray-500 hover:text-white'
-                                                            : 'border-gray-300 text-gray-600 hover:border-gray-400 hover:text-gray-800'
-                                                            }`}
-                                                    >
-                                                        <div className="flex items-center justify-center space-x-2">
-                                                            {showAllSites ? (
-                                                                <>
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                                                                    </svg>
-                                                                    <span>접기 ({siteStats.length - 6}개 숨기기)</span>
-                                                                </>
-                                                            ) : (
-                                                                <>
-                                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                                    </svg>
-                                                                    <span>더보기 ({siteStats.length - 6}개 더 보기)</span>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </button>
-                                                )}
-                                            </>
-                                        ) : (
-                                            <div className="text-center py-6">
-                                                <span className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>사이트 데이터가 없습니다</span>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow`}>
-                                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                                    <div>
-                                        <h3 className={`text-lg font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>컨텐츠 관리</h3>
-                                        <p className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>최근 등록된 글 목록</p>
-                                    </div>
-                                </div>
-                                <div className="p-6 space-y-6">
-                                    {/* 크롤링 시간 기준 섹션 */}
-                                    <div>
-                                        <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>크롤링 시간 기준</h4>
-                                        <div className="space-y-3">
-                                            {recentPostsByCrawlLoading ? (
-                                                <div className="space-y-3">
-                                                    {[1, 2, 3, 4, 5].map((i) => (
-                                                        <div key={i} className="animate-pulse">
-                                                            <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                                <div className="space-y-2 flex-1">
-                                                                    <div className="h-4 bg-gray-400 rounded w-3/4"></div>
-                                                                    <div className="h-3 bg-gray-400 rounded w-1/2"></div>
-                                                                </div>
-                                                                <div className="h-3 bg-gray-400 rounded w-16"></div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : recentPostsByCrawl.length > 0 ? (
-                                                recentPostsByCrawl.map((post) => {
-                                                    let regDate = null;
-                                                    let formattedRegDate = '정보 없음';
-
-                                                    if (post.regDate) {
-                                                        try {
-                                                            regDate = new Date(post.regDate);
-                                                            // Check if the date is valid
-                                                            if (!isNaN(regDate.getTime())) {
-                                                                const year = regDate.getFullYear();
-                                                                const month = String(regDate.getMonth() + 1).padStart(2, '0');
-                                                                const day = String(regDate.getDate()).padStart(2, '0');
-                                                                const hour = String(regDate.getHours()).padStart(2, '0');
-                                                                const minute = String(regDate.getMinutes()).padStart(2, '0');
-                                                                const second = String(regDate.getSeconds()).padStart(2, '0');
-                                                                formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                            }
-                                                        } catch (error) {
-                                                            console.warn('Failed to parse regDate:', post.regDate, error);
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                            <div className="flex justify-between items-start">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center space-x-2 mb-1">
-                                                                        <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
-                                                                            {post.site}
-                                                                        </span>
-                                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                                            {post.date}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
-                                                                        {post.title}
-                                                                    </p>
-                                                                </div>
-                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
-                                                                    {formattedRegDate}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="text-center py-4">
-                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>크롤링된 글이 없습니다</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    {/* 구분선 */}
-                                    <div className={`border-t ${isDarkMode ? 'border-gray-700' : 'border-gray-200'}`}></div>
-
-                                    {/* 컨텐츠 시간 기준 섹션 */}
-                                    <div>
-                                        <h4 className={`text-md font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'} mb-3`}>컨텐츠 시간 기준</h4>
-                                        <div className="space-y-3">
-                                            {recentPostsByContentLoading ? (
-                                                <div className="space-y-3">
-                                                    {[1, 2, 3, 4, 5].map((i) => (
-                                                        <div key={i} className="animate-pulse">
-                                                            <div className="flex justify-between items-start py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                                <div className="space-y-2 flex-1">
-                                                                    <div className="h-4 bg-gray-400 rounded w-3/4"></div>
-                                                                    <div className="h-3 bg-gray-400 rounded w-1/2"></div>
-                                                                </div>
-                                                                <div className="h-3 bg-gray-400 rounded w-16"></div>
-                                                            </div>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            ) : recentPostsByContent.length > 0 ? (
-                                                recentPostsByContent.map((post) => {
-                                                    // Handle content date (string field)
-                                                    let formattedContentDate = '정보 없음';
-                                                    if (post.date) {
-                                                        try {
-                                                            const contentDate = new Date(post.date);
-                                                            if (!isNaN(contentDate.getTime())) {
-                                                                const year = contentDate.getFullYear();
-                                                                const month = String(contentDate.getMonth() + 1).padStart(2, '0');
-                                                                const day = String(contentDate.getDate()).padStart(2, '0');
-                                                                const hour = String(contentDate.getHours()).padStart(2, '0');
-                                                                const minute = String(contentDate.getMinutes()).padStart(2, '0');
-                                                                const second = String(contentDate.getSeconds()).padStart(2, '0');
-                                                                formattedContentDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                            } else {
-                                                                // If parsing fails, show the raw date string
-                                                                formattedContentDate = post.date;
-                                                            }
-                                                        } catch (error) {
-                                                            console.warn('Failed to parse content date:', post.date, error);
-                                                            // If parsing fails, show the raw date string
-                                                            formattedContentDate = post.date;
-                                                        }
-                                                    }
-
-                                                    // Handle reg date (datetime field)
-                                                    let formattedRegDate = '정보 없음';
-                                                    if (post.regDate) {
-                                                        try {
-                                                            const regDate = new Date(post.regDate);
-                                                            if (!isNaN(regDate.getTime())) {
-                                                                const year = regDate.getFullYear();
-                                                                const month = String(regDate.getMonth() + 1).padStart(2, '0');
-                                                                const day = String(regDate.getDate()).padStart(2, '0');
-                                                                const hour = String(regDate.getHours()).padStart(2, '0');
-                                                                const minute = String(regDate.getMinutes()).padStart(2, '0');
-                                                                const second = String(regDate.getSeconds()).padStart(2, '0');
-                                                                formattedRegDate = `${year}-${month}-${day} ${hour}:${minute}:${second}`;
-                                                            }
-                                                        } catch (error) {
-                                                            console.warn('Failed to parse regDate:', post.regDate, error);
-                                                        }
-                                                    }
-
-                                                    return (
-                                                        <div key={post.no} className="py-2 px-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                                                            <div className="flex justify-between items-start">
-                                                                <div className="flex-1 min-w-0">
-                                                                    <div className="flex items-center space-x-2 mb-1">
-                                                                        <span className={`text-xs px-2 py-1 rounded ${isDarkMode ? 'bg-gray-600 text-gray-300' : 'bg-gray-300 text-gray-800'}`}>
-                                                                            {post.site}
-                                                                        </span>
-                                                                        <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>
-                                                                            컨텐츠: {formattedContentDate}
-                                                                        </span>
-                                                                    </div>
-                                                                    <p className={`text-sm font-medium truncate ${isDarkMode ? 'text-white' : 'text-gray-900'}`} title={post.title}>
-                                                                        {post.title}
-                                                                    </p>
-                                                                </div>
-                                                                <span className={`text-xs ${isDarkMode ? 'text-gray-300' : 'text-gray-600'} ml-2 flex-shrink-0`}>
-                                                                    {formattedRegDate}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    );
-                                                })
-                                            ) : (
-                                                <div className="text-center py-4">
-                                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-600'}`}>컨텐츠가 없습니다</span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </>
                 )}
 
