@@ -180,7 +180,7 @@ export default function TrendingCommunities({ onPostClick }: TrendingCommunities
 
           // optimizedImagesList에 없으면 best_post_url에서 YouTube 썸네일 추출 시도
           if (!imageUrl && community.best_post_url) {
-            imageUrl = getYouTubeThumbnail(community.best_post_url);
+            imageUrl = getYouTubeThumbnail(community.best_post_url) || undefined;
           }
 
           const isYouTube = community.site === 'YouTube';

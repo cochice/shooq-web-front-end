@@ -820,7 +820,7 @@ export default function AdminPage() {
                                     : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
                                     }`}
                             >
-                                컨텐츠 관리
+                                컨텐츠 제작
                             </button>
                         </div>
                         {activeTab === 'dashboard' && (
