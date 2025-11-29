@@ -1,6 +1,6 @@
-//const API_BASE_URL = 'https://shooq-web-back-end.onrender.com/api';
+const API_BASE_URL = 'https://shooq-web-back-end.onrender.com/api';
 //const API_BASE_URL = 'https://localhost:7183/api';
-const API_BASE_URL = 'https://semioviparous-braden-nontransferential.ngrok-free.dev/api';
+//const API_BASE_URL = 'https://semioviparous-braden-nontransferential.ngrok-free.dev/api';
 
 export interface OptimizedImages {
   id: number;
