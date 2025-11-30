@@ -1,6 +1,5 @@
 //const API_BASE_URL = 'https://shooq-web-back-end.onrender.com/api';
 //const API_BASE_URL = 'https://localhost:7171/api';
-//const API_BASE_URL = 'https://semioviparous-braden-nontransferential.ngrok-free.dev/api';
 const API_BASE_URL = 'https://api.shooq.live/api';
 
 export interface OptimizedImages {
@@ -196,7 +195,7 @@ export class ApiService {
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts?${params.toString()}`);
   }
 
-    static async getPopularPosts(page: number = 1, pageSize: number = 10, maxNo?: number, site?: string, keyword?: string): Promise<PagedResult<SiteBbsInfo>> {
+    static async getPopularPosts(page: number = 1, pageSize: number = 10, maxNo?: number, site?: string, keyword?: string, sortBy?: string, topPeriod?: string): Promise<PagedResult<SiteBbsInfo>> {
         const params = new URLSearchParams({
             page: page.toString(),
             pageSize: pageSize.toString()
@@ -205,6 +204,8 @@ export class ApiService {
         if (maxNo) params.append('maxNo', maxNo.toString());
         if (site) params.append('site', site);
         if (keyword) params.append('keyword', keyword);
+        if (sortBy) params.append('sortBy', sortBy);
+        if (topPeriod) params.append('topPeriod', topPeriod);
 
         return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts-popular?${params.toString()}`);
     }

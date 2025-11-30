@@ -129,6 +129,8 @@ function HomeContent() {
             searchQuery,
             isInitialLoad,
             siteParam,
+            sortBy,
+            topPeriod,
             timestamp: new Date().toISOString(),
             stack: new Error().stack?.split('\n')[1]?.trim()
         });
@@ -173,7 +175,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [siteParam, sortBy, topPeriod]); // sortBy, topPeriod 의존성 추가
+    }, [siteParam, sortBy, topPeriod, initialLoadCompleted]); // sortBy, topPeriod 의존성 추가
 
 
     // 더 많은 포스트 로드
@@ -215,7 +217,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore, isSearchMode, siteParam, sortBy, topPeriod]);
+    }, [currentPage, loading, hasMore, maxNo, isSearchMode, siteParam, sortBy, topPeriod]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
     const handleHomeClick = () => {
@@ -576,7 +578,6 @@ function HomeContent() {
                                         setIsSortDropdownOpen(false);
                                         setPosts([]);
                                         setCurrentPage(1);
-                                        loadInitialData();
                                     }}
                                     className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${sortBy === 'hot' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
@@ -588,7 +589,6 @@ function HomeContent() {
                                         setIsSortDropdownOpen(false);
                                         setPosts([]);
                                         setCurrentPage(1);
-                                        loadInitialData();
                                     }}
                                     className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${sortBy === 'new' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
@@ -600,7 +600,6 @@ function HomeContent() {
                                         setIsSortDropdownOpen(false);
                                         setPosts([]);
                                         setCurrentPage(1);
-                                        loadInitialData();
                                     }}
                                     className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${sortBy === 'rising' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
                                 >
@@ -635,7 +634,6 @@ function HomeContent() {
                                                     setIsTopPeriodOpen(false);
                                                     setPosts([]);
                                                     setCurrentPage(1);
-                                                    loadInitialData();
                                                 }}
                                                 className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${sortBy === 'top' && topPeriod === 'today' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
                                             >
@@ -649,7 +647,6 @@ function HomeContent() {
                                                     setIsTopPeriodOpen(false);
                                                     setPosts([]);
                                                     setCurrentPage(1);
-                                                    loadInitialData();
                                                 }}
                                                 className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${sortBy === 'top' && topPeriod === 'week' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
                                             >
@@ -663,7 +660,6 @@ function HomeContent() {
                                                     setIsTopPeriodOpen(false);
                                                     setPosts([]);
                                                     setCurrentPage(1);
-                                                    loadInitialData();
                                                 }}
                                                 className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${sortBy === 'top' && topPeriod === 'month' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
                                             >
@@ -677,7 +673,6 @@ function HomeContent() {
                                                     setIsTopPeriodOpen(false);
                                                     setPosts([]);
                                                     setCurrentPage(1);
-                                                    loadInitialData();
                                                 }}
                                                 className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${sortBy === 'top' && topPeriod === 'all' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
                                             >
