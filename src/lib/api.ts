@@ -196,14 +196,16 @@ export class ApiService {
     return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts?${params.toString()}`);
   }
 
-    static async getPopularPosts(page: number = 1, pageSize: number = 10, maxNo?: number): Promise<PagedResult<SiteBbsInfo>> {
+    static async getPopularPosts(page: number = 1, pageSize: number = 10, maxNo?: number, site?: string, keyword?: string): Promise<PagedResult<SiteBbsInfo>> {
         const params = new URLSearchParams({
             page: page.toString(),
             pageSize: pageSize.toString()
         });
 
         if (maxNo) params.append('maxNo', maxNo.toString());
-        
+        if (site) params.append('site', site);
+        if (keyword) params.append('keyword', keyword);
+
         return this.fetchApi<PagedResult<SiteBbsInfo>>(`/posts-popular?${params.toString()}`);
     }
 

@@ -8,7 +8,6 @@ import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
 import ImageCarousel from '@/components/ImageCarousel';
 import PostDetailOverlay from '@/components/PostDetailOverlay';
-import TrendingCommunities from '@/components/TrendingCommunities';
 import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
@@ -140,10 +139,15 @@ function HomeContent() {
             setShowTopLoadingBar(true);
             setError(null);
 
-            const postsResult = await ApiService.getPopularPosts(
+            const postsResult = await ApiService.getPosts(
                 1,
                 10,
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
+                searchQuery,
+                undefined, // author
                 undefined, // 첫 조회 시에는 maxNo 없음
+                sortBy, // 정렬 기준
+                sortBy === 'top' ? topPeriod : undefined // 추천순일 때만 기간 전달
             );
 
             setPosts(postsResult.data);
@@ -169,7 +173,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [siteParam]); // sortBy, topPeriod 의존성 추가
+    }, [siteParam, sortBy, topPeriod]); // sortBy, topPeriod 의존성 추가
 
 
     // 더 많은 포스트 로드
@@ -184,10 +188,15 @@ function HomeContent() {
                 setShowTopLoadingBar(true);
             }
 
-            const result = await ApiService.getPopularPosts(
+            const result = await ApiService.getPosts(
                 currentPage + 1,
                 10,
+                siteParam ? siteParam : undefined, // URL 파라미터의 site 값 사용
+                isSearchMode ? searchKeywordRef.current : undefined,
+                undefined, // author
                 maxNo, // 중복 방지를 위해 maxNo 전달
+                sortBy, // 정렬 기준
+                sortBy === 'top' ? topPeriod : undefined // 추천순일 때만 기간 전달
             );
 
             setPosts(prev => [...prev, ...result.data]);
@@ -206,7 +215,7 @@ function HomeContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore]);
+    }, [currentPage, loading, hasMore, isSearchMode, siteParam, sortBy, topPeriod]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
     const handleHomeClick = () => {
@@ -512,15 +521,24 @@ function HomeContent() {
 
                 {/* Main Content */}
                 <main className="flex-1 p-4 max-w-4xl">
-                    {/* Trending Communities - Reddit Style */}
-                    <TrendingCommunities
-                        onPostClick={(postId) => {
-                            // 쿼리 파라미터로 상세뷰 열기
-                            const params = new URLSearchParams(searchParams.toString());
-                            params.set('postId', postId);
-                            router.push(`/popular?${params.toString()}`, { scroll: false });
-                        }}
-                    />
+                    {/* Page Title */}
+                    <div className="mb-6">
+                        <h1
+                            className="text-2xl font-bold text-gray-900 dark:text-white cursor-pointer"
+                            onClick={() => {
+                                // 상태 초기화 후 데이터 다시 로드
+                                setPosts([]);
+                                setCurrentPage(1);
+                                setHasMore(true);
+                                setError(null);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                                loadInitialData(undefined, true);
+                            }}
+                        >
+                            커뮤니티 인기글 (둘러보기){siteParam ? ` - ${siteParam}` : ''}
+                        </h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-1">인기 커뮤니티의 최신 이슈를 확인하세요</p>
+                    </div>
 
                     {/* 정렬 드롭다운 - Reddit 스타일 */}
                     <div className="mb-4 relative issue-dropdown">
@@ -787,7 +805,7 @@ function HomeContent() {
                                                         // 쿼리 파라미터로 상세뷰 열기
                                                         const params = new URLSearchParams(searchParams.toString());
                                                         params.set('postId', postId);
-                                                        router.push(`/popular?${params.toString()}`, { scroll: false });
+                                                        router.push(`/explore?${params.toString()}`, { scroll: false });
                                                     }}
                                                 >
                                                     {post.title ? decodeHtmlEntities(post.title) : '제목 없음'}
@@ -921,7 +939,7 @@ function HomeContent() {
                         // postId 파라미터만 제거하고 나머지는 유지
                         const params = new URLSearchParams(searchParams.toString());
                         params.delete('postId');
-                        const newUrl = params.toString() ? `/popular?${params.toString()}` : '/popular';
+                        const newUrl = params.toString() ? `/explore?${params.toString()}` : '/explore';
                         router.push(newUrl, { scroll: false });
                     }}
                 />

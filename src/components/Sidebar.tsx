@@ -73,19 +73,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                                     <span className="font-medium">홈</span>
                                 </button>
 
-                                {/* 인기 버튼 */}
+                                {/* 둘러보기 버튼 */}
                                 <button
                                     type="button"
                                     className="flex items-center space-x-3 w-full px-3 py-3 text-white hover:bg-gray-800 rounded-lg transition-colors"
                                     onClick={() => {
-                                        onNavigate?.('/popular');
+                                        onNavigate?.('/explore');
                                         onCloseSidebar?.();
                                     }}
                                 >
                                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
-                                    <span className="font-medium">인기</span>
+                                    <span className="font-medium">둘러보기</span>
                                 </button>
 
                                 {/* 오늘의 핫이슈 버튼 - hidden */}
@@ -201,19 +201,19 @@ const Sidebar: React.FC<SidebarProps> = ({
                             <span className="font-medium">홈</span>
                         </button>
 
-                        {/* 인기 버튼 */}
+                        {/* 둘러보기 버튼 */}
                         <button
                             type="button"
                             className="flex items-center space-x-3 w-full px-3 py-3 text-gray-900 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             onClick={() => {
-                                onNavigate?.('/popular');
+                                onNavigate?.('/explore');
                                 onCloseSidebar?.();
                             }}
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            <span className="font-medium">인기</span>
+                            <span className="font-medium">둘러보기</span>
                         </button>
 
                         {/* 오늘의 핫이슈 버튼 - hidden */}

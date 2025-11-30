@@ -333,7 +333,6 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                                 controls
                                                 muted
                                                 autoPlay
-                                                loop
                                                 playsInline
                                                 preload="metadata"
                                                 onClick={() => openFullscreen(index)}
@@ -499,7 +498,6 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                                         controls
                                                         muted
                                                         autoPlay
-                                                        loop
                                                         playsInline
                                                         preload="metadata"
                                                         style={{ maxWidth: '90vw', maxHeight: '90vh' }}

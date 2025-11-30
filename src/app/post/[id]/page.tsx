@@ -37,6 +37,16 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
         setIsSidebarOpen(false);
     };
 
+    // 뒤로 가기 핸들러
+    const handleBack = () => {
+        // 브라우저 히스토리가 있으면 뒤로, 없으면 메인 페이지로
+        if (window.history.length > 1) {
+            router.back();
+        } else {
+            router.push('/');
+        }
+    };
+
     // 날짜 포맷팅 함수
     const formatDate = (dateString?: string) => {
         if (!dateString) return '날짜 없음';
@@ -190,7 +200,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     </div>
                     <button
                         type="button"
-                        onClick={() => router.back()}
+                        onClick={handleBack}
                         className="mt-4 px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded hover:bg-gray-300 dark:hover:bg-gray-600"
                     >
                         뒤로 가기
@@ -236,7 +246,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                 {/* 뒤로 가기 버튼 */}
                 <button
                     type="button"
-                    onClick={() => router.back()}
+                    onClick={handleBack}
                     className="mb-4 p-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                     aria-label="뒤로 가기"
                 >
