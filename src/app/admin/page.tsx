@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ApiService, AdminStats, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
+import PostDetailOverlay from '@/components/PostDetailOverlay';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -68,7 +69,7 @@ export default function AdminPage() {
 
 
     // 탭 상태 관리
-    const [activeTab, setActiveTab] = useState<'dashboard' | 'content'>('dashboard');
+    const [activeTab, setActiveTab] = useState<'dashboard' | 'content' | 'contentManagement'>('dashboard');
 
     // 컨텐츠 제작 탭 - 주간집계 state
     const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
@@ -78,6 +79,20 @@ export default function AdminPage() {
     const [weeklyData, setWeeklyData] = useState<{ data: SiteBbsInfo[] } | null>(null);
     const [weeklyDataLoading, setWeeklyDataLoading] = useState(false);
     const [contentText, setContentText] = useState('');
+
+    // 컨텐츠 관리 탭 state
+    const [managementPosts, setManagementPosts] = useState<SiteBbsInfo[]>([]);
+    const [managementPage, setManagementPage] = useState(1);
+    const [managementTotalCount, setManagementTotalCount] = useState(0);
+    const [managementLoading, setManagementLoading] = useState(false);
+    const [managementSearchKeyword, setManagementSearchKeyword] = useState('');
+    const [managementSiteFilter, setManagementSiteFilter] = useState<string>('');
+    const [selectedPosts, setSelectedPosts] = useState<Set<number>>(new Set());
+    const [managementSortBy, setManagementSortBy] = useState<'hot' | 'new' | 'top' | 'rising'>('new');
+    const [managementTopPeriod, setManagementTopPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
+    const [isManagementSortDropdownOpen, setIsManagementSortDropdownOpen] = useState(false);
+    const [isManagementTopPeriodOpen, setIsManagementTopPeriodOpen] = useState(false);
+    const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
     // 대시보드 통계 데이터 로드
     const loadStats = async () => {
@@ -329,6 +344,79 @@ export default function AdminPage() {
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isLoggedIn, activeTab]);
+
+    // 컨텐츠 관리 탭 활성화 시 데이터 로드
+    useEffect(() => {
+        if (isLoggedIn && activeTab === 'contentManagement') {
+            loadManagementPosts();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isLoggedIn, activeTab]);
+
+    // 컨텐츠 관리 - 게시물 로드
+    const loadManagementPosts = async (page = 1) => {
+        try {
+            setManagementLoading(true);
+            const result = await ApiService.getPosts(
+                page,
+                20,
+                managementSiteFilter || undefined,
+                managementSearchKeyword || undefined,
+                undefined,
+                undefined,
+                managementSortBy,
+                managementSortBy === 'top' ? managementTopPeriod : undefined
+            );
+            setManagementPosts(result.data);
+            setManagementPage(result.page);
+            setManagementTotalCount(result.totalCount);
+        } catch (error) {
+            console.error('컨텐츠 관리 데이터 로드 실패:', error);
+        } finally {
+            setManagementLoading(false);
+        }
+    };
+
+    // 검색 실행
+    const handleManagementSearch = () => {
+        setManagementPage(1);
+        loadManagementPosts(1);
+    };
+
+    // 선택한 게시물 토글
+    const togglePostSelection = (postNo: number) => {
+        setSelectedPosts(prev => {
+            const newSet = new Set(prev);
+            if (newSet.has(postNo)) {
+                newSet.delete(postNo);
+            } else {
+                newSet.add(postNo);
+            }
+            return newSet;
+        });
+    };
+
+    // 전체 선택/해제
+    const toggleAllPosts = () => {
+        if (selectedPosts.size === managementPosts.length) {
+            setSelectedPosts(new Set());
+        } else {
+            setSelectedPosts(new Set(managementPosts.map(post => post.no)));
+        }
+    };
+
+    // 선택한 게시물 삭제 (임시 - 실제로는 백엔드 API 필요)
+    const handleDeleteSelected = () => {
+        if (selectedPosts.size === 0) {
+            alert('삭제할 게시물을 선택해주세요.');
+            return;
+        }
+        if (confirm(`선택한 ${selectedPosts.size}개의 게시물을 삭제하시겠습니까?`)) {
+            // TODO: 백엔드 API 호출
+            alert('삭제 기능은 백엔드 API 구현 후 활성화됩니다.');
+            setSelectedPosts(new Set());
+        }
+    };
 
     // 로그인 처리
     const handleLogin = async (e: React.FormEvent) => {
@@ -822,6 +910,16 @@ export default function AdminPage() {
                             >
                                 컨텐츠 제작
                             </button>
+                            <button
+                                type="button"
+                                onClick={() => setActiveTab('contentManagement')}
+                                className={`px-6 py-3 font-medium transition-colors relative ${activeTab === 'contentManagement'
+                                    ? `${isDarkMode ? 'text-orange-400' : 'text-orange-600'} border-b-2 border-orange-500`
+                                    : `${isDarkMode ? 'text-gray-400 hover:text-gray-300' : 'text-gray-600 hover:text-gray-800'}`
+                                    }`}
+                            >
+                                컨텐츠 관리
+                            </button>
                         </div>
                         {activeTab === 'dashboard' && (
                             <button
@@ -1090,6 +1188,378 @@ export default function AdminPage() {
                         </div>
 
                     </>
+                )}
+
+                {/* 컨텐츠 관리 탭 콘텐츠 */}
+                {activeTab === 'contentManagement' && (
+                    <div>
+                        {/* 페이지 타이틀 */}
+                        <div className="mb-6">
+                            <h2 className={`text-xl font-semibold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                컨텐츠 관리
+                            </h2>
+                            <p className={`text-sm ${isDarkMode ? 'text-gray-400' : 'text-gray-600'} mt-1`}>
+                                게시물을 검색하고 관리하세요
+                            </p>
+                        </div>
+
+                        {/* 정렬 드롭다운 */}
+                        <div className="mb-4 relative management-sort-dropdown">
+                            <button
+                                onClick={() => setIsManagementSortDropdownOpen(!isManagementSortDropdownOpen)}
+                                className="flex items-center space-x-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-full hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                            >
+                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                    {managementSortBy === 'hot' && '인기순'}
+                                    {managementSortBy === 'new' && '최신순'}
+                                    {managementSortBy === 'top' && `추천순 (${managementTopPeriod === 'today' ? '오늘' : managementTopPeriod === 'week' ? '이번주' : managementTopPeriod === 'month' ? '이번달' : '전체'})`}
+                                    {managementSortBy === 'rising' && '급상승'}
+                                </span>
+                                <svg
+                                    className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${isManagementSortDropdownOpen ? 'rotate-180' : ''}`}
+                                    fill="none"
+                                    stroke="currentColor"
+                                    viewBox="0 0 24 24"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+
+                            {/* 드롭다운 메뉴 */}
+                            {isManagementSortDropdownOpen && (
+                                <div className="absolute top-full left-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg overflow-hidden z-50">
+                                    {/* 정렬 기준 헤더 */}
+                                    <div className="px-4 py-2 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+                                        <span className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase">정렬 기준</span>
+                                    </div>
+
+                                    <button
+                                        onClick={() => {
+                                            setManagementSortBy('hot');
+                                            setIsManagementSortDropdownOpen(false);
+                                            setManagementPage(1);
+                                            loadManagementPosts(1);
+                                        }}
+                                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${managementSortBy === 'hot' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
+                                    >
+                                        인기순
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setManagementSortBy('new');
+                                            setIsManagementSortDropdownOpen(false);
+                                            setManagementPage(1);
+                                            loadManagementPosts(1);
+                                        }}
+                                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${managementSortBy === 'new' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
+                                    >
+                                        최신순
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            setManagementSortBy('rising');
+                                            setIsManagementSortDropdownOpen(false);
+                                            setManagementPage(1);
+                                            loadManagementPosts(1);
+                                        }}
+                                        className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${managementSortBy === 'rising' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
+                                    >
+                                        급상승
+                                    </button>
+
+                                    {/* 추천순 - 서브메뉴 포함 */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setIsManagementTopPeriodOpen(!isManagementTopPeriodOpen)}
+                                            className={`w-full text-left px-4 py-3 text-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${managementSortBy === 'top' ? 'bg-orange-50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400' : 'text-gray-700 dark:text-gray-300'}`}
+                                        >
+                                            <span>추천순</span>
+                                            <svg
+                                                className={`w-4 h-4 transition-transform ${isManagementTopPeriodOpen ? 'rotate-90' : ''}`}
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                            </svg>
+                                        </button>
+
+                                        {/* 추천순 기간 선택 서브메뉴 */}
+                                        {isManagementTopPeriodOpen && (
+                                            <div className="bg-gray-50 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-600">
+                                                <button
+                                                    onClick={() => {
+                                                        setManagementSortBy('top');
+                                                        setManagementTopPeriod('today');
+                                                        setIsManagementSortDropdownOpen(false);
+                                                        setIsManagementTopPeriodOpen(false);
+                                                        setManagementPage(1);
+                                                        loadManagementPosts(1);
+                                                    }}
+                                                    className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${managementSortBy === 'top' && managementTopPeriod === 'today' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                                                >
+                                                    오늘
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setManagementSortBy('top');
+                                                        setManagementTopPeriod('week');
+                                                        setIsManagementSortDropdownOpen(false);
+                                                        setIsManagementTopPeriodOpen(false);
+                                                        setManagementPage(1);
+                                                        loadManagementPosts(1);
+                                                    }}
+                                                    className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${managementSortBy === 'top' && managementTopPeriod === 'week' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                                                >
+                                                    이번주
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setManagementSortBy('top');
+                                                        setManagementTopPeriod('month');
+                                                        setIsManagementSortDropdownOpen(false);
+                                                        setIsManagementTopPeriodOpen(false);
+                                                        setManagementPage(1);
+                                                        loadManagementPosts(1);
+                                                    }}
+                                                    className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${managementSortBy === 'top' && managementTopPeriod === 'month' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                                                >
+                                                    이번달
+                                                </button>
+                                                <button
+                                                    onClick={() => {
+                                                        setManagementSortBy('top');
+                                                        setManagementTopPeriod('all');
+                                                        setIsManagementSortDropdownOpen(false);
+                                                        setIsManagementTopPeriodOpen(false);
+                                                        setManagementPage(1);
+                                                        loadManagementPosts(1);
+                                                    }}
+                                                    className={`w-full text-left px-8 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${managementSortBy === 'top' && managementTopPeriod === 'all' ? 'text-orange-600 dark:text-orange-400 font-medium' : 'text-gray-600 dark:text-gray-400'}`}
+                                                >
+                                                    전체
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 검색 및 필터 영역 */}
+                        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow p-6 mb-6`}>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {/* 사이트 필터 */}
+                                <div>
+                                    <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                        사이트 필터
+                                    </label>
+                                    <select
+                                        value={managementSiteFilter}
+                                        onChange={(e) => setManagementSiteFilter(e.target.value)}
+                                        className={`w-full px-4 py-2 border rounded-lg ${isDarkMode
+                                            ? 'bg-gray-700 border-gray-600 text-white'
+                                            : 'bg-white border-gray-300 text-gray-900'
+                                            }`}
+                                    >
+                                        <option value="">전체 사이트</option>
+                                        <option value="TheQoo">TheQoo</option>
+                                        <option value="Ppomppu">Ppomppu</option>
+                                        <option value="Ruliweb">Ruliweb</option>
+                                        <option value="Inven">Inven</option>
+                                        <option value="MlbPark">MlbPark</option>
+                                        <option value="Clien">Clien</option>
+                                        <option value="BobaeDream">BobaeDream</option>
+                                        <option value="Humoruniv">Humoruniv</option>
+                                        <option value="82Cook">82Cook</option>
+                                        <option value="SlrClub">SlrClub</option>
+                                        <option value="Damoang">Damoang</option>
+                                        <option value="TodayHumor">TodayHumor</option>
+                                        <option value="FMKorea">FMKorea</option>
+                                    </select>
+                                </div>
+
+                                {/* 검색어 입력 */}
+                                <div>
+                                    <label className={`block text-sm font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} mb-2`}>
+                                        검색어
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={managementSearchKeyword}
+                                        onChange={(e) => setManagementSearchKeyword(e.target.value)}
+                                        onKeyPress={(e) => e.key === 'Enter' && handleManagementSearch()}
+                                        placeholder="제목 또는 내용 검색"
+                                        className={`w-full px-4 py-2 border rounded-lg ${isDarkMode
+                                            ? 'bg-gray-700 border-gray-600 text-white placeholder-gray-400'
+                                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                                            }`}
+                                    />
+                                </div>
+
+                                {/* 검색 버튼 */}
+                                <div className="flex items-end">
+                                    <button
+                                        onClick={handleManagementSearch}
+                                        disabled={managementLoading}
+                                        className="w-full px-4 py-2 bg-orange-500 hover:bg-orange-600 disabled:bg-orange-300 text-white font-medium rounded-lg transition-colors"
+                                    >
+                                        {managementLoading ? '검색 중...' : '검색'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* 선택된 게시물 액션 */}
+                            {selectedPosts.size > 0 && (
+                                <div className="mt-4 flex items-center justify-between border-t border-gray-200 dark:border-gray-700 pt-4">
+                                    <span className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                        {selectedPosts.size}개 선택됨
+                                    </span>
+                                    <button
+                                        onClick={handleDeleteSelected}
+                                        className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        선택 항목 삭제
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 게시물 리스트 */}
+                        <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow overflow-hidden`}>
+                            {/* 테이블 헤더 */}
+                            <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
+                                <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider">
+                                    <div className="col-span-1 flex items-center">
+                                        <input
+                                            type="checkbox"
+                                            checked={managementPosts.length > 0 && selectedPosts.size === managementPosts.length}
+                                            onChange={toggleAllPosts}
+                                            className="w-4 h-4 text-orange-500 rounded"
+                                        />
+                                    </div>
+                                    <div className="col-span-1">NO</div>
+                                    <div className="col-span-2">사이트</div>
+                                    <div className="col-span-4">제목</div>
+                                    <div className="col-span-2">작성자</div>
+                                    <div className="col-span-1">조회</div>
+                                    <div className="col-span-1">액션</div>
+                                </div>
+                            </div>
+
+                            {/* 테이블 본문 */}
+                            <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                                {managementLoading ? (
+                                    <div className="text-center py-12">
+                                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-orange-500 mx-auto"></div>
+                                        <p className={`mt-4 ${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>데이터를 불러오는 중...</p>
+                                    </div>
+                                ) : managementPosts.length === 0 ? (
+                                    <div className="text-center py-12">
+                                        <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>검색 결과가 없습니다.</p>
+                                    </div>
+                                ) : (
+                                    managementPosts.map((post, index) => (
+                                        <div
+                                            key={`${post.no}-${index}`}
+                                            className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-900'
+                                                }`}
+                                        >
+                                            <div className="col-span-1 flex items-center">
+                                                <input
+                                                    type="checkbox"
+                                                    checked={selectedPosts.has(post.no)}
+                                                    onChange={() => togglePostSelection(post.no)}
+                                                    className="w-4 h-4 text-orange-500 rounded"
+                                                />
+                                            </div>
+                                            <div className="col-span-1 text-sm">{post.no}</div>
+                                            <div className="col-span-2 text-sm font-medium">{post.site || '-'}</div>
+                                            <div className="col-span-4 flex items-center gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedPostId(`${post.site}-${post.no}`)}
+                                                    className="text-sm hover:text-orange-500 line-clamp-1 text-left cursor-pointer flex-1"
+                                                >
+                                                    {post.title || '제목 없음'}
+                                                </button>
+                                                {post.url && (
+                                                    <a
+                                                        href={post.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-gray-400 hover:text-orange-500 flex-shrink-0"
+                                                        title="원본 링크"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                        </svg>
+                                                    </a>
+                                                )}
+                                            </div>
+                                            <div className="col-span-2 text-sm truncate">{post.author || '-'}</div>
+                                            <div className="col-span-1 text-sm">{post.views || 0}</div>
+                                            <div className="col-span-1">
+                                                <button
+                                                    onClick={() => {
+                                                        if (confirm('이 게시물을 삭제하시겠습니까?')) {
+                                                            alert('삭제 기능은 백엔드 API 구현 후 활성화됩니다.');
+                                                        }
+                                                    }}
+                                                    className="text-red-500 hover:text-red-600 text-xs font-medium"
+                                                >
+                                                    삭제
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+
+                            {/* 페이지네이션 */}
+                            {!managementLoading && managementPosts.length > 0 && (
+                                <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} px-6 py-4`}>
+                                    <div className="flex items-center justify-between">
+                                        <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                            총 {managementTotalCount.toLocaleString()}개 게시물 (현재 페이지: {managementPage})
+                                        </div>
+                                        <div className="flex space-x-2">
+                                            <button
+                                                onClick={() => loadManagementPosts(managementPage - 1)}
+                                                disabled={managementPage === 1}
+                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${managementPage === 1
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                                                    }`}
+                                            >
+                                                이전
+                                            </button>
+                                            <button
+                                                onClick={() => loadManagementPosts(managementPage + 1)}
+                                                disabled={managementPage * 20 >= managementTotalCount}
+                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${managementPage * 20 >= managementTotalCount
+                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
+                                                    }`}
+                                            >
+                                                다음
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 상세뷰 오버레이 */}
+                        {selectedPostId && (
+                            <PostDetailOverlay
+                                postId={selectedPostId}
+                                isDarkMode={isDarkMode}
+                                onToggleDarkMode={toggleDarkMode}
+                                onClose={() => setSelectedPostId(null)}
+                            />
+                        )}
+                    </div>
                 )}
 
                 {/* 컨텐츠 제작 탭 콘텐츠 */}
