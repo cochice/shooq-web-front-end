@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { OptimizedImages } from '@/lib/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Keyboard, Zoom } from 'swiper/modules';
@@ -37,6 +37,9 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [maxHeight, setMaxHeight] = useState<number>(0);
     const [containerWidth, setContainerWidth] = useState<number>(0);
     const [videoDimensions, setVideoDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
+
+    // 비디오 요소들의 ref를 저장 (number와 string 키 모두 허용)
+    const videoRefs = useRef<{ [key: string | number]: HTMLVideoElement | null }>({});
 
     const openFullscreen = (index: number) => {
         setFullscreenIndex(index);
@@ -114,6 +117,47 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
             window.removeEventListener('keydown', handleKeyDown);
         };
     }, [isFullscreen]);
+
+    // Intersection Observer를 사용한 비디오 자동 재생/정지
+    useEffect(() => {
+        // Intersection Observer 옵션: 50% 이상 보일 때 트리거
+        const observerOptions = {
+            root: null, // viewport를 root로 사용
+            rootMargin: '0px',
+            threshold: 0.5, // 50% 이상 보일 때
+        };
+
+        const handleIntersection = (entries: IntersectionObserverEntry[]) => {
+            entries.forEach((entry) => {
+                const videoElement = entry.target as HTMLVideoElement;
+
+                if (entry.isIntersecting) {
+                    // 50% 이상 보이면 재생
+                    videoElement.play().catch((error) => {
+                        // 자동 재생 실패 시 (예: 사용자 인터랙션 필요) 조용히 무시
+                        console.log('Video autoplay prevented:', error);
+                    });
+                } else {
+                    // 화면에서 벗어나면 일시정지
+                    videoElement.pause();
+                }
+            });
+        };
+
+        const observer = new IntersectionObserver(handleIntersection, observerOptions);
+
+        // 모든 비디오 요소 관찰 시작
+        Object.values(videoRefs.current).forEach((videoElement) => {
+            if (videoElement) {
+                observer.observe(videoElement);
+            }
+        });
+
+        // cleanup: 관찰 중지
+        return () => {
+            observer.disconnect();
+        };
+    }, [images]); // images가 변경될 때마다 observer 재설정
 
     // 조건부 return은 모든 hooks 이후에 위치
     if (!images || images.length === 0) {
@@ -327,15 +371,17 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                             />
                                         ) : (
                                             <video
+                                                ref={(el) => {
+                                                    videoRefs.current[index] = el;
+                                                }}
                                                 src={image.cloudinary_url}
-                                                className={`w-full h-auto object-contain cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                className={`w-full h-auto object-contain ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                     }`}
                                                 controls
                                                 muted
                                                 autoPlay
                                                 playsInline
                                                 preload="metadata"
-                                                onClick={() => openFullscreen(index)}
                                                 onLoadedMetadata={(e) => handleVideoLoad(e, index)}
                                                 onError={(e) => handleVideoError(e, index)}
                                             />
@@ -493,6 +539,10 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                                 // 비디오: 전체화면에서 큰 사이즈로 재생
                                                 <div className="w-full h-full flex items-center justify-center px-8 py-4">
                                                     <video
+                                                        ref={(el) => {
+                                                            // 전체화면 비디오도 동일한 ref에 저장
+                                                            videoRefs.current[`fullscreen-${index}`] = el;
+                                                        }}
                                                         src={image.cloudinary_url}
                                                         className="max-w-full max-h-full object-contain"
                                                         controls
