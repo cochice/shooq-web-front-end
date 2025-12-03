@@ -1,4 +1,3 @@
-//const API_BASE_URL = 'https://shooq-web-back-end.onrender.com/api';
 //const API_BASE_URL = 'https://localhost:7171/api';
 const API_BASE_URL = 'https://api.shooq.live/api';
 
@@ -22,10 +21,11 @@ export interface SiteBbsInfo {
   reg_date?: string;
   reply_num?: string;
   content?: string;
-  posted_dt?: Date;
+  posted_dt?: string;
   gubun?: string;
   cloudinary_url?: string;
   optimizedImagesList?: OptimizedImages[];
+  img2?: number;
 }
 
 export interface SiteBbsInfoMain {
@@ -297,5 +297,15 @@ export class ApiService {
   // 트렌딩 커뮤니티 조회 (레딧 스타일)
   static async getTrendingCommunities(limit: number = 6): Promise<TrendingCommunity[]> {
     return this.fetchApi<TrendingCommunity[]>(`/trending-communities?limit=${limit}`);
+  }
+
+  // 관리자 - 게시물 삭제
+  static async deletePost(id: number): Promise<{ message: string; deletedId: number }> {
+    return this.fetchApi<{ message: string; deletedId: number }>(`/admin/bbs-img/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
   }
 }

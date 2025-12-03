@@ -367,6 +367,8 @@ export default function AdminPage() {
                 managementSortBy,
                 managementSortBy === 'top' ? managementTopPeriod : undefined
             );
+            // console.log('관리자 페이지 - 가져온 데이터:', result);
+            // console.log('관리자 페이지 - 첫 번째 게시물:', result.data[0]);
             setManagementPosts(result.data);
             setManagementPage(result.page);
             setManagementTotalCount(result.totalCount);
@@ -405,16 +407,34 @@ export default function AdminPage() {
         }
     };
 
-    // 선택한 게시물 삭제 (임시 - 실제로는 백엔드 API 필요)
-    const handleDeleteSelected = () => {
+    // 선택한 게시물 삭제
+    const handleDeleteSelected = async () => {
         if (selectedPosts.size === 0) {
             alert('삭제할 게시물을 선택해주세요.');
             return;
         }
         if (confirm(`선택한 ${selectedPosts.size}개의 게시물을 삭제하시겠습니까?`)) {
-            // TODO: 백엔드 API 호출
-            alert('삭제 기능은 백엔드 API 구현 후 활성화됩니다.');
-            setSelectedPosts(new Set());
+            try {
+                setManagementLoading(true);
+
+                // 모든 선택된 게시물에 대해 삭제 API 호출
+                const deletePromises = Array.from(selectedPosts).map(postNo =>
+                    ApiService.deletePost(postNo)
+                );
+
+                await Promise.all(deletePromises);
+
+                alert(`${selectedPosts.size}개의 게시물이 성공적으로 삭제되었습니다.`);
+                setSelectedPosts(new Set());
+
+                // 게시물 목록 새로고침
+                await loadManagementPosts(managementPage);
+            } catch (error) {
+                console.error('게시물 삭제 실패:', error);
+                alert('게시물 삭제 중 오류가 발생했습니다.');
+            } finally {
+                setManagementLoading(false);
+            }
         }
     };
 
@@ -565,7 +585,7 @@ export default function AdminPage() {
 
         // 실시간 인기글 보러가기 링크 추가
         html += `<p style="margin-bottom: 20px;">`;
-        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq Live | shooq.live(슉라이브) - 실시간 인기글 보러 가기 →</a>`;
         html += `</p>\n\n`;
 
         // 전체 통합 랭킹
@@ -578,7 +598,7 @@ export default function AdminPage() {
 
         // 실시간 인기글 보러가기 링크 추가
         html += `<p style="margin-bottom: 20px;">`;
-        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+        html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq Live | shooq.live(슉라이브) - 실시간 인기글 보러 가기 →</a>`;
         html += `</p>\n\n`;
 
         // 공간 추가
@@ -598,7 +618,7 @@ export default function AdminPage() {
 
                 // 실시간 인기글 보러가기 링크 추가
                 html += `<p style="margin-bottom: 20px;">`;
-                html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq(슉) - 실시간 인기글 보러 가기 →</a>`;
+                html += `⚡ <a href="https://shooq.live" target="_blank" style="color: #f97316; font-weight: bold; text-decoration: none;">Shooq Live | shooq.live(슉라이브) - 실시간 인기글 보러 가기 →</a>`;
                 html += `</p>\n\n`;
 
                 // 마지막 커뮤니티가 아니면 공간 추가
@@ -732,12 +752,12 @@ export default function AdminPage() {
                 onClick={() => !dayInfo.isFuture && handleDayClick(dayInfo.date)}
                 disabled={dayInfo.isFuture}
                 className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${selectedDate === dayInfo.date
-                        ? 'bg-orange-500 text-white cursor-pointer'
-                        : dayInfo.isToday
-                            ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 cursor-pointer'
-                            : dayInfo.isFuture
-                                ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
-                                : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
+                    ? 'bg-orange-500 text-white cursor-pointer'
+                    : dayInfo.isToday
+                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200 dark:bg-blue-900 dark:text-blue-300 dark:hover:bg-blue-800 cursor-pointer'
+                        : dayInfo.isFuture
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-700 dark:text-gray-500'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600 cursor-pointer'
                     }`}
             >
                 {dayInfo.day} ({dayInfo.date.slice(8, 10)})
@@ -1121,7 +1141,7 @@ export default function AdminPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className={`text-xs ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>마지막 크롤링 시간</p>
-                                            <p className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
+                                            <div className={`text-sm font-medium ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
                                                 {latestCrawlTimeLoading ? (
                                                     <span className="animate-pulse">로딩중...</span>
                                                 ) : latestCrawlTime ? (
@@ -1164,7 +1184,7 @@ export default function AdminPage() {
                                                 ) : (
                                                     '데이터 없음'
                                                 )}
-                                            </p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -1429,8 +1449,8 @@ export default function AdminPage() {
                         <div className={`${isDarkMode ? 'bg-gray-800' : 'bg-white'} rounded-lg shadow overflow-hidden`}>
                             {/* 테이블 헤더 */}
                             <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border-b ${isDarkMode ? 'border-gray-600' : 'border-gray-200'}`}>
-                                <div className="grid grid-cols-12 gap-4 px-6 py-3 text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider">
-                                    <div className="col-span-1 flex items-center">
+                                <div className="grid grid-cols-[auto_80px_120px_1fr_150px_140px_80px_80px_80px] gap-4 px-6 py-3 text-xs font-medium ${isDarkMode ? 'text-gray-300' : 'text-gray-700'} uppercase tracking-wider">
+                                    <div className="flex items-center">
                                         <input
                                             type="checkbox"
                                             checked={managementPosts.length > 0 && selectedPosts.size === managementPosts.length}
@@ -1438,12 +1458,14 @@ export default function AdminPage() {
                                             className="w-4 h-4 text-orange-500 rounded"
                                         />
                                     </div>
-                                    <div className="col-span-1">NO</div>
-                                    <div className="col-span-2">사이트</div>
-                                    <div className="col-span-4">제목</div>
-                                    <div className="col-span-2">작성자</div>
-                                    <div className="col-span-1">조회</div>
-                                    <div className="col-span-1">액션</div>
+                                    <div>NO</div>
+                                    <div>사이트</div>
+                                    <div>제목</div>
+                                    <div>작성자</div>
+                                    <div>포스팅 시간</div>
+                                    <div>조회</div>
+                                    <div>미디어 개수</div>
+                                    <div>액션</div>
                                 </div>
                             </div>
 
@@ -1459,13 +1481,13 @@ export default function AdminPage() {
                                         <p className={`${isDarkMode ? 'text-gray-400' : 'text-gray-600'}`}>검색 결과가 없습니다.</p>
                                     </div>
                                 ) : (
-                                    managementPosts.map((post, index) => (
+                                    managementPosts.map((post, index) =>
                                         <div
                                             key={`${post.no}-${index}`}
-                                            className={`grid grid-cols-12 gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-900'
+                                            className={`grid grid-cols-[auto_80px_120px_1fr_150px_140px_80px_80px_80px] gap-4 px-6 py-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors ${isDarkMode ? 'text-gray-300' : 'text-gray-900'
                                                 }`}
                                         >
-                                            <div className="col-span-1 flex items-center">
+                                            <div className="flex items-center">
                                                 <input
                                                     type="checkbox"
                                                     checked={selectedPosts.has(post.no)}
@@ -1473,9 +1495,9 @@ export default function AdminPage() {
                                                     className="w-4 h-4 text-orange-500 rounded"
                                                 />
                                             </div>
-                                            <div className="col-span-1 text-sm">{post.no}</div>
-                                            <div className="col-span-2 text-sm font-medium">{post.site || '-'}</div>
-                                            <div className="col-span-4 flex items-center gap-2">
+                                            <div className="text-sm">{post.no}</div>
+                                            <div className="text-sm font-medium">{post.site || '-'}</div>
+                                            <div className="flex items-center gap-2">
                                                 <button
                                                     type="button"
                                                     onClick={() => setSelectedPostId(`${post.site}-${post.no}`)}
@@ -1497,13 +1519,22 @@ export default function AdminPage() {
                                                     </a>
                                                 )}
                                             </div>
-                                            <div className="col-span-2 text-sm truncate">{post.author || '-'}</div>
-                                            <div className="col-span-1 text-sm">{post.views || 0}</div>
-                                            <div className="col-span-1">
+                                            <div className="text-sm truncate">{post.author || '-'}</div>
+                                            <div className="text-xs">{post.date || '-'}</div>
+                                            <div className="text-sm">{post.views || 0}</div>
+                                            <div className="text-sm text-center">{post.img2 || 0}</div>
+                                            <div>
                                                 <button
-                                                    onClick={() => {
+                                                    onClick={async () => {
                                                         if (confirm('이 게시물을 삭제하시겠습니까?')) {
-                                                            alert('삭제 기능은 백엔드 API 구현 후 활성화됩니다.');
+                                                            try {
+                                                                await ApiService.deletePost(post.no);
+                                                                alert('게시물이 성공적으로 삭제되었습니다.');
+                                                                await loadManagementPosts(managementPage);
+                                                            } catch (error) {
+                                                                console.error('게시물 삭제 실패:', error);
+                                                                alert('게시물 삭제 중 오류가 발생했습니다.');
+                                                            }
                                                         }
                                                     }}
                                                     className="text-red-500 hover:text-red-600 text-xs font-medium"
@@ -1512,42 +1543,118 @@ export default function AdminPage() {
                                                 </button>
                                             </div>
                                         </div>
-                                    ))
+                                    )
                                 )}
                             </div>
 
                             {/* 페이지네이션 */}
-                            {!managementLoading && managementPosts.length > 0 && (
-                                <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} px-6 py-4`}>
-                                    <div className="flex items-center justify-between">
-                                        <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
-                                            총 {managementTotalCount.toLocaleString()}개 게시물 (현재 페이지: {managementPage})
-                                        </div>
-                                        <div className="flex space-x-2">
-                                            <button
-                                                onClick={() => loadManagementPosts(managementPage - 1)}
-                                                disabled={managementPage === 1}
-                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${managementPage === 1
-                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
-                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                                                    }`}
-                                            >
-                                                이전
-                                            </button>
-                                            <button
-                                                onClick={() => loadManagementPosts(managementPage + 1)}
-                                                disabled={managementPage * 20 >= managementTotalCount}
-                                                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${managementPage * 20 >= managementTotalCount
-                                                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
-                                                    : 'bg-orange-500 text-white hover:bg-orange-600'
-                                                    }`}
-                                            >
-                                                다음
-                                            </button>
+                            {!managementLoading && managementPosts.length > 0 && (() => {
+                                const totalPages = Math.ceil(managementTotalCount / 20);
+                                const maxDisplayPages = 10;
+
+                                // 페이지 번호 생성 로직
+                                const getPageNumbers = () => {
+                                    if (totalPages <= maxDisplayPages) {
+                                        // 총 페이지가 10개 이하면 모두 표시
+                                        return Array.from({ length: totalPages }, (_, i) => i + 1);
+                                    }
+
+                                    // 현재 페이지 기준으로 앞뒤 페이지 계산
+                                    const halfDisplay = Math.floor(maxDisplayPages / 2);
+                                    let startPage = Math.max(1, managementPage - halfDisplay);
+                                    let endPage = Math.min(totalPages, startPage + maxDisplayPages - 1);
+
+                                    // endPage가 총 페이지에 가까우면 startPage 조정
+                                    if (endPage - startPage < maxDisplayPages - 1) {
+                                        startPage = Math.max(1, endPage - maxDisplayPages + 1);
+                                    }
+
+                                    const pages = [];
+                                    for (let i = startPage; i <= endPage; i++) {
+                                        pages.push(i);
+                                    }
+                                    return pages;
+                                };
+
+                                const pageNumbers = getPageNumbers();
+                                const showFirstEllipsis = pageNumbers[0] > 1;
+                                const showLastEllipsis = pageNumbers[pageNumbers.length - 1] < totalPages;
+
+                                return (
+                                    <div className={`${isDarkMode ? 'bg-gray-700' : 'bg-gray-50'} border-t ${isDarkMode ? 'border-gray-600' : 'border-gray-200'} px-6 py-4`}>
+                                        <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                            <div className={`text-sm ${isDarkMode ? 'text-gray-300' : 'text-gray-700'}`}>
+                                                총 {managementTotalCount.toLocaleString()}개 게시물 (현재: {managementPage} / {totalPages} 페이지)
+                                            </div>
+                                            <div className="flex flex-wrap items-center justify-center gap-1">
+                                                {/* Prev 버튼 */}
+                                                <button
+                                                    onClick={() => loadManagementPosts(managementPage - 1)}
+                                                    disabled={managementPage === 1}
+                                                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${managementPage === 1
+                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                                                        : 'bg-white text-gray-700 hover:bg-orange-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+                                                        }`}
+                                                >
+                                                    Prev
+                                                </button>
+
+                                                {/* 첫 페이지 ... */}
+                                                {showFirstEllipsis && (
+                                                    <>
+                                                        <button
+                                                            onClick={() => loadManagementPosts(1)}
+                                                            className="px-3 py-1.5 text-xs font-medium rounded transition-colors bg-white text-gray-700 hover:bg-orange-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                                                        >
+                                                            1
+                                                        </button>
+                                                        <span className={`px-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>...</span>
+                                                    </>
+                                                )}
+
+                                                {/* 페이지 번호들 */}
+                                                {pageNumbers.map((page) => (
+                                                    <button
+                                                        key={page}
+                                                        onClick={() => loadManagementPosts(page)}
+                                                        className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${page === managementPage
+                                                            ? 'bg-orange-500 text-white'
+                                                            : 'bg-white text-gray-700 hover:bg-orange-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+                                                            }`}
+                                                    >
+                                                        {page}
+                                                    </button>
+                                                ))}
+
+                                                {/* 마지막 페이지 ... */}
+                                                {showLastEllipsis && (
+                                                    <>
+                                                        <span className={`px-2 ${isDarkMode ? 'text-gray-500' : 'text-gray-400'}`}>...</span>
+                                                        <button
+                                                            onClick={() => loadManagementPosts(totalPages)}
+                                                            className="px-3 py-1.5 text-xs font-medium rounded transition-colors bg-white text-gray-700 hover:bg-orange-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600"
+                                                        >
+                                                            {totalPages}
+                                                        </button>
+                                                    </>
+                                                )}
+
+                                                {/* Next 버튼 */}
+                                                <button
+                                                    onClick={() => loadManagementPosts(managementPage + 1)}
+                                                    disabled={managementPage >= totalPages}
+                                                    className={`px-3 py-1.5 text-xs font-medium rounded transition-colors ${managementPage >= totalPages
+                                                        ? 'bg-gray-200 text-gray-400 cursor-not-allowed dark:bg-gray-600 dark:text-gray-500'
+                                                        : 'bg-white text-gray-700 hover:bg-orange-50 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-600'
+                                                        }`}
+                                                >
+                                                    Next
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* 상세뷰 오버레이 */}
