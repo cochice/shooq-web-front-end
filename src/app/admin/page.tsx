@@ -1562,7 +1562,7 @@ export default function AdminPage() {
                                     // 현재 페이지 기준으로 앞뒤 페이지 계산
                                     const halfDisplay = Math.floor(maxDisplayPages / 2);
                                     let startPage = Math.max(1, managementPage - halfDisplay);
-                                    let endPage = Math.min(totalPages, startPage + maxDisplayPages - 1);
+                                    const endPage = Math.min(totalPages, startPage + maxDisplayPages - 1);
 
                                     // endPage가 총 페이지에 가까우면 startPage 조정
                                     if (endPage - startPage < maxDisplayPages - 1) {
