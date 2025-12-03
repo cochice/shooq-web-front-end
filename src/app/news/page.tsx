@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ApiService, SiteBbsInfo } from '@/lib/api';
+import { ApiService, SiteBbsInfoMain } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
@@ -13,7 +13,7 @@ function NewsContent() {
     const searchParams = useSearchParams();
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
 
-    const [posts, setPosts] = useState<SiteBbsInfo[]>([]);
+    const [posts, setPosts] = useState<SiteBbsInfoMain[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(false);
