@@ -54,7 +54,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         document.body.style.overflow = 'unset';
     };
 
-    // 화면 크기 감지 및 컨테이너 너비 업데이트
+    // 화면 크기 감지 및 컨테이너 너비 업데이트 (디바운싱 적용)
     useEffect(() => {
         const updateContainerWidth = () => {
             // max-w-3xl (48rem = 768px) 기준으로 실제 컨테이너 너비 계산
@@ -65,8 +65,19 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         };
 
         updateContainerWidth();
-        window.addEventListener('resize', updateContainerWidth);
-        return () => window.removeEventListener('resize', updateContainerWidth);
+
+        // 모바일 주소창 숨김/표시로 인한 빈번한 resize 방지
+        let resizeTimeoutId: NodeJS.Timeout;
+        const debouncedResize = () => {
+            clearTimeout(resizeTimeoutId);
+            resizeTimeoutId = setTimeout(updateContainerWidth, 200);
+        };
+
+        window.addEventListener('resize', debouncedResize);
+        return () => {
+            window.removeEventListener('resize', debouncedResize);
+            clearTimeout(resizeTimeoutId);
+        };
     }, []);
 
     // containerWidth가 변경되면 높이를 다시 계산
@@ -132,14 +143,18 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                 const videoElement = entry.target as HTMLVideoElement;
 
                 if (entry.isIntersecting) {
-                    // 50% 이상 보이면 재생
-                    videoElement.play().catch((error) => {
-                        // 자동 재생 실패 시 (예: 사용자 인터랙션 필요) 조용히 무시
-                        console.log('Video autoplay prevented:', error);
+                    // 50% 이상 보이면 재생 (requestAnimationFrame으로 최적화)
+                    requestAnimationFrame(() => {
+                        videoElement.play().catch((error) => {
+                            // 자동 재생 실패 시 (예: 사용자 인터랙션 필요) 조용히 무시
+                            console.log('Video autoplay prevented:', error);
+                        });
                     });
                 } else {
                     // 화면에서 벗어나면 일시정지
-                    videoElement.pause();
+                    requestAnimationFrame(() => {
+                        videoElement.pause();
+                    });
                 }
             });
         };
@@ -147,7 +162,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         const observer = new IntersectionObserver(handleIntersection, observerOptions);
 
         // 모든 비디오 요소 관찰 시작
-        Object.values(videoRefs.current).forEach((videoElement) => {
+        const currentVideoRefs = videoRefs.current;
+        Object.values(currentVideoRefs).forEach((videoElement) => {
             if (videoElement) {
                 observer.observe(videoElement);
             }
@@ -157,7 +173,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         return () => {
             observer.disconnect();
         };
-    }, [images]); // images가 변경될 때마다 observer 재설정
+    }, []); // 의존성 제거로 한 번만 실행
 
     // 조건부 return은 모든 hooks 이후에 위치
     if (!images || images.length === 0) {
@@ -320,8 +336,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     slidesPerView={1}
                     spaceBetween={0}
                     resistanceRatio={0}
-                    touchRatio={1.5}
-                    threshold={5}
+                    touchRatio={1}
+                    threshold={10}
                     followFinger={true}
                     onSwiper={setMainSwiper}
                     onSlideChange={(swiper) => setCurrentIndex(swiper.activeIndex)}
@@ -329,6 +345,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                     resistance={true}
                     grabCursor={true}
                     speed={400}
+                    touchStartPreventDefault={false}
+                    touchMoveStopPropagation={false}
                 >
                     {images.map((image, index) => {
                         const dimension = imageDimensions[index];
@@ -502,8 +520,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                             slidesPerView={1}
                             spaceBetween={0}
                             resistanceRatio={0}
-                            touchRatio={1.5}
-                            threshold={5}
+                            touchRatio={1}
+                            threshold={10}
                             followFinger={true}
                             initialSlide={fullscreenIndex}
                             onSwiper={setFullscreenSwiper}
@@ -512,6 +530,8 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                             resistance={true}
                             grabCursor={true}
                             speed={400}
+                            touchStartPreventDefault={false}
+                            touchMoveStopPropagation={false}
                         >
                             {images.map((image, index) => {
                                 const dimension = imageDimensions[index];

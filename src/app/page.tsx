@@ -278,24 +278,30 @@ function HomeContent() {
         }
     }, [siteParam, isSettingsLoaded, isRestoringSettings, loadInitialData, keywordParam])
 
-    // 스크롤 이벤트 핸들러
+    // 스크롤 이벤트 핸들러 - 안정적인 참조를 위해 useCallback 사용
+    const handleScrollEvent = useCallback(() => {
+        // 이미 로딩 중이거나 더 이상 데이터가 없으면 중단
+        if (loadingRef.current || !hasMore) {
+            return;
+        }
+
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const windowHeight = window.innerHeight;
+        const documentHeight = document.documentElement.offsetHeight;
+
+        // 페이지 하단에서 800px 전에 로드 시작
+        if (scrollTop + windowHeight >= documentHeight - 800) {
+            loadMorePosts();
+        }
+    }, [hasMore, loadMorePosts]);
+
+    // 스크롤 이벤트 등록
     useEffect(() => {
-        const handleScroll = () => {
-            const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-            const windowHeight = window.innerHeight;
-            const documentHeight = document.documentElement.offsetHeight;
-
-            // 페이지 하단에서 800px 전에 로드 시작
-            if (scrollTop + windowHeight >= documentHeight - 800) {
-                loadMorePosts();
-            }
-        };
-
         // 디바운싱을 위한 타이머
         let timeoutId: NodeJS.Timeout;
         const debouncedHandleScroll = () => {
             clearTimeout(timeoutId);
-            timeoutId = setTimeout(handleScroll, 100);
+            timeoutId = setTimeout(handleScrollEvent, 150); // 디바운스 시간을 150ms로 증가
         };
 
         window.addEventListener('scroll', debouncedHandleScroll, { passive: true });
@@ -303,7 +309,7 @@ function HomeContent() {
             window.removeEventListener('scroll', debouncedHandleScroll);
             clearTimeout(timeoutId);
         };
-    }, [loadMorePosts]);
+    }, [handleScrollEvent]);
 
     // 다크 모드 토글
     const toggleDarkMode = () => {

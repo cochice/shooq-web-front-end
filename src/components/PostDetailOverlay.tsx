@@ -95,7 +95,7 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
         fetchPost();
     }, [postId]);
 
-    // ESC 키로 닫기 및 body 스크롤 관리
+    // ESC 키로 닫기 및 body 스크롤 관리 (최적화)
     useEffect(() => {
         const handleEscape = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
@@ -103,24 +103,32 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
             }
         };
 
-        document.addEventListener('keydown', handleEscape);
-
-        // PostDetailOverlay가 열려있는 동안 body 스크롤 숨김
+        // PostDetailOverlay가 열려있는 동안 body 스크롤 숨김 및 터치 이벤트 관리
         const originalOverflow = document.body.style.overflow;
+        const originalTouchAction = document.body.style.touchAction;
+
         document.body.style.overflow = 'hidden';
+        // 모바일에서 스크롤/스와이프 충돌 방지
+        document.body.style.touchAction = 'none';
+
+        document.addEventListener('keydown', handleEscape, { passive: true });
 
         return () => {
             document.removeEventListener('keydown', handleEscape);
             // 원래 상태로 복원
             document.body.style.overflow = originalOverflow;
+            document.body.style.touchAction = originalTouchAction;
         };
     }, [onClose]);
 
     // FullscreenImageViewer가 닫힐 때 body overflow를 다시 hidden으로 설정
     useEffect(() => {
         if (selectedImageIndex === null) {
-            // 이미지 뷰어가 닫혔을 때
-            document.body.style.overflow = 'hidden';
+            // 이미지 뷰어가 닫혔을 때 오버레이의 스크롤 상태 복원
+            requestAnimationFrame(() => {
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none';
+            });
         }
     }, [selectedImageIndex]);
 
