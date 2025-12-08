@@ -1,14 +1,11 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import Link from 'next/link';
 
 export default function TermsPage() {
-    const [isDarkMode, setIsDarkMode] = useState(false);
-
     useEffect(() => {
         const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-        setIsDarkMode(savedDarkMode);
         if (savedDarkMode) {
             document.documentElement.classList.add('dark');
         }
@@ -52,7 +49,7 @@ export default function TermsPage() {
                                 제1조 (목적)
                             </h2>
                             <p className="text-gray-700 dark:text-gray-300">
-                                이 약관은 슉라이브(이하 "회사")가 제공하는 커뮤니티 콘텐츠 큐레이션 서비스(이하 "서비스")의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
+                                이 약관은 슉라이브(이하 &quot;회사&quot;)가 제공하는 커뮤니티 콘텐츠 큐레이션 서비스(이하 &quot;서비스&quot;)의 이용과 관련하여 회사와 이용자 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.
                             </p>
                         </section>
 
@@ -62,10 +59,10 @@ export default function TermsPage() {
                                 제2조 (정의)
                             </h2>
                             <ol className="list-decimal list-inside space-y-2 text-gray-700 dark:text-gray-300">
-                                <li>"서비스"란 회사가 제공하는 커뮤니티 콘텐츠 수집, 큐레이션, 표시 및 관련 부가 서비스를 말합니다.</li>
-                                <li>"이용자"란 본 약관에 동의하고 회사가 제공하는 서비스를 이용하는 회원 및 비회원을 말합니다.</li>
-                                <li>"회원"란 본 약관에 동의하고 회사와 서비스 이용계약을 체결한 자를 말합니다.</li>
-                                <li>"콘텐츠"란 서비스 내에서 표시되는 각종 커뮤니티 게시물, 댓글, 이미지, 영상 등을 말합니다.</li>
+                                <li>&quot;서비스&quot;란 회사가 제공하는 커뮤니티 콘텐츠 수집, 큐레이션, 표시 및 관련 부가 서비스를 말합니다.</li>
+                                <li>&quot;이용자&quot;란 본 약관에 동의하고 회사가 제공하는 서비스를 이용하는 회원 및 비회원을 말합니다.</li>
+                                <li>&quot;회원&quot;란 본 약관에 동의하고 회사와 서비스 이용계약을 체결한 자를 말합니다.</li>
+                                <li>&quot;콘텐츠&quot;란 서비스 내에서 표시되는 각종 커뮤니티 게시물, 댓글, 이미지, 영상 등을 말합니다.</li>
                             </ol>
                         </section>
 
@@ -219,7 +216,7 @@ export default function TermsPage() {
                                 제12조 (개인정보 보호)
                             </h2>
                             <p className="text-gray-700 dark:text-gray-300">
-                                회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다. 개인정보의 보호 및 이용에 대해서는 별도의 "개인정보 처리방침"이 적용됩니다.
+                                회사는 관련 법령이 정하는 바에 따라 회원의 개인정보를 보호하기 위해 노력합니다. 개인정보의 보호 및 이용에 대해서는 별도의 &quot;개인정보 처리방침&quot;이 적용됩니다.
                             </p>
                         </section>
 

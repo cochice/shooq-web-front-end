@@ -141,7 +141,7 @@ export default function VisitorChart({ isDarkMode = false }: VisitorChartProps) 
                 padding: 12,
                 displayColors: true,
                 callbacks: {
-                    label: function(context: any) {
+                    label: function(context: { dataset: { label?: string }, parsed: { y: number } }) {
                         const label = context.dataset.label || '';
                         return `${label}: ${context.parsed.y.toLocaleString()}`;
                     }
@@ -174,8 +174,8 @@ export default function VisitorChart({ isDarkMode = false }: VisitorChartProps) 
                     font: {
                         size: 11,
                     },
-                    callback: function(value: any) {
-                        return value.toLocaleString();
+                    callback: function(value: number | string) {
+                        return typeof value === 'number' ? value.toLocaleString() : value;
                     }
                 },
             },

@@ -45,7 +45,7 @@ export default function PrivacyPage() {
                     <div className="prose dark:prose-invert max-w-none space-y-8">
                         <section>
                             <p className="text-gray-700 dark:text-gray-300">
-                                슉라이브(이하 "회사")는 「개인정보 보호법」 제30조에 따라 이용자의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.
+                                슉라이브(이하 &quot;회사&quot;)는 「개인정보 보호법」 제30조에 따라 이용자의 개인정보를 보호하고 이와 관련한 고충을 신속하고 원활하게 처리할 수 있도록 다음과 같이 개인정보 처리방침을 수립·공개합니다.
                             </p>
                         </section>
 
@@ -301,7 +301,7 @@ export default function PrivacyPage() {
                                 <div>
                                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">2. 권리 행사 방법</h3>
                                     <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 space-y-1">
-                                        <li>서비스 내 "설정 &gt; 계정 관리" 메뉴</li>
+                                        <li>서비스 내 &quot;설정 &gt; 계정 관리&quot; 메뉴</li>
                                         <li>이메일: support@shooq.live</li>
                                         <li>서면, 전화, 이메일을 통한 요청</li>
                                     </ul>
@@ -410,7 +410,7 @@ export default function PrivacyPage() {
                                 <div>
                                     <h3 className="font-semibold text-gray-900 dark:text-white mb-2">3. 거부 방법</h3>
                                     <ul className="list-disc list-inside ml-4 text-gray-700 dark:text-gray-300 space-y-1">
-                                        <li>서비스 내 "설정 &gt; 개인정보" 메뉴에서 조정 가능</li>
+                                        <li>서비스 내 &quot;설정 &gt; 개인정보&quot; 메뉴에서 조정 가능</li>
                                         <li>브라우저 쿠키 설정에서 차단 가능</li>
                                     </ul>
                                 </div>

@@ -1,9 +1,11 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
-export default function NaverCallbackPage() {
+export const dynamic = 'force-dynamic';
+
+function NaverCallbackContent() {
     const router = useRouter();
     const searchParams = useSearchParams();
     const [error, setError] = useState<string | null>(null);
@@ -164,5 +166,24 @@ export default function NaverCallbackPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function NaverCallbackPage() {
+    return (
+        <Suspense fallback={
+            <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900">
+                <div className="max-w-md w-full space-y-8 p-8">
+                    <div className="text-center">
+                        <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mb-4"></div>
+                        <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                            로딩 중...
+                        </h2>
+                    </div>
+                </div>
+            </div>
+        }>
+            <NaverCallbackContent />
+        </Suspense>
     );
 }

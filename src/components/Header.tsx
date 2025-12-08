@@ -259,7 +259,7 @@ const Header: React.FC<HeaderProps> = ({
                                     >
                                         {userInfo?.profileImageUrl ? (
                                             <img
-                                                src={userInfo.profileImageUrl}
+                                                src={userInfo?.profileImageUrl}
                                                 alt="프로필"
                                                 className="w-8 h-8 rounded-full object-cover"
                                             />
@@ -287,7 +287,7 @@ const Header: React.FC<HeaderProps> = ({
                                                     <div className="flex items-center space-x-3">
                                                         {userInfo?.profileImageUrl ? (
                                                             <img
-                                                                src={userInfo.profileImageUrl}
+                                                                src={userInfo?.profileImageUrl}
                                                                 alt="프로필"
                                                                 className="w-10 h-10 rounded-full object-cover"
                                                             />
