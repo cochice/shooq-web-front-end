@@ -111,7 +111,7 @@ const Header: React.FC<HeaderProps> = ({
                     <Link
                         href="/" prefetch={false} onClick={(e) => {
                             e.preventDefault();
-                            window.location.href = '/';   // 완전 새로고침
+                            window.location.href = '/';   // 완전 새로고침. 
                         }}
                         className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                     >
