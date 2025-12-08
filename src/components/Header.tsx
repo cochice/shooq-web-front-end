@@ -120,7 +120,7 @@ const Header: React.FC<HeaderProps> = ({
                             alt="Shooq Logo"
                             className="w-10 h-10"
                         />
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">SHOOQ Live</span>
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">Shooq Live</span>
                     </Link>
                 </div>
 
