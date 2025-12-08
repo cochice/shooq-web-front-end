@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { ApiService, AdminStats, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
 import PostDetailOverlay from '@/components/PostDetailOverlay';
+import VisitorChart from '@/components/VisitorChart';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -1101,6 +1102,11 @@ export default function AdminPage() {
                                     </div>
                                 </div>
                             </div>
+                        </div>
+
+                        {/* 방문자 통계 차트 */}
+                        <div className="mb-8">
+                            <VisitorChart isDarkMode={isDarkMode} />
                         </div>
 
                         {/* 크롤링 통계 차트 섹션 */}

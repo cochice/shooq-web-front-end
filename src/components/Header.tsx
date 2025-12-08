@@ -1,7 +1,9 @@
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import LoginModal from './LoginModal';
 
 interface HeaderProps {
     isDarkMode: boolean;
@@ -40,6 +42,66 @@ const Header: React.FC<HeaderProps> = ({
     onHomeClick, // eslint-disable-line @typescript-eslint/no-unused-vars
     showDarkModeToggle = true
 }) => {
+    const router = useRouter();
+    const [isLoggedIn, setIsLoggedIn] = useState(false);
+    const [userInfo, setUserInfo] = useState<{ nickname?: string; profileImageUrl?: string } | null>(null);
+    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [showLoginModal, setShowLoginModal] = useState(false);
+
+    // 로그인 상태 체크 함수
+    const checkLoginStatus = () => {
+        const token = localStorage.getItem('access_token');
+        const user = localStorage.getItem('user');
+        setIsLoggedIn(!!token);
+        if (user) {
+            try {
+                setUserInfo(JSON.parse(user));
+            } catch (e) {
+                console.error('Failed to parse user info:', e);
+                setUserInfo(null);
+            }
+        } else {
+            setUserInfo(null);
+        }
+    };
+
+    useEffect(() => {
+        checkLoginStatus();
+
+        // storage 이벤트 리스너 추가 (다른 탭에서 로그인/로그아웃 시 동기화)
+        const handleStorageChange = (e: StorageEvent) => {
+            if (e.key === 'access_token' || e.key === 'user') {
+                checkLoginStatus();
+            }
+        };
+
+        window.addEventListener('storage', handleStorageChange);
+
+        // 커스텀 이벤트 리스너 추가 (같은 탭에서 로그인 시 업데이트)
+        const handleLoginEvent = () => {
+            checkLoginStatus();
+        };
+
+        window.addEventListener('loginStateChanged', handleLoginEvent);
+
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('loginStateChanged', handleLoginEvent);
+        };
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('refresh_token');
+        localStorage.removeItem('user');
+        setIsLoggedIn(false);
+        setShowUserMenu(false);
+        router.push('/');
+    };
+
+    const handleLoginClick = () => {
+        setShowLoginModal(true);
+    };
 
     return (
         <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-40">
@@ -53,10 +115,12 @@ const Header: React.FC<HeaderProps> = ({
                         }}
                         className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                     >
-                        <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                            <span className="text-white font-bold text-xl">S</span>
-                        </div>
-                        <span className="text-xl font-bold text-gray-900 dark:text-white">Shooq</span>
+                        <img
+                            src="/shooq_cat_logo.png"
+                            alt="Shooq Logo"
+                            className="w-10 h-10"
+                        />
+                        <span className="text-xl font-bold text-gray-900 dark:text-white">shooq.live</span>
                     </Link>
                 </div>
 
@@ -91,9 +155,11 @@ const Header: React.FC<HeaderProps> = ({
                                 }}
                                 className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                             >
-                                <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
-                                    <span className="text-white font-bold text-xl">S</span>
-                                </div>
+                                <img
+                                    src="/shooq_cat_logo.png"
+                                    alt="Shooq Logo"
+                                    className="w-10 h-10"
+                                />
                                 <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">Shooq</span>
                             </Link>
                         </div>
@@ -182,6 +248,94 @@ const Header: React.FC<HeaderProps> = ({
                                 </Link>
                             )}
 
+                            {/* User Menu / Login Button - Hidden */}
+                            {false && (isLoggedIn ? (
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowUserMenu(!showUserMenu)}
+                                        className="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                        aria-label="사용자 메뉴"
+                                    >
+                                        {userInfo?.profileImageUrl ? (
+                                            <img
+                                                src={userInfo.profileImageUrl}
+                                                alt="프로필"
+                                                className="w-8 h-8 rounded-full object-cover"
+                                            />
+                                        ) : (
+                                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                                <span className="text-white font-bold text-sm">
+                                                    {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
+                                                </span>
+                                            </div>
+                                        )}
+                                        <span className="hidden sm:block text-sm font-medium">
+                                            {userInfo?.nickname || '사용자'}
+                                        </span>
+                                    </button>
+
+                                    {showUserMenu && (
+                                        <>
+                                            <div
+                                                className="fixed inset-0 z-10"
+                                                onClick={() => setShowUserMenu(false)}
+                                            ></div>
+                                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
+                                                {/* 사용자 정보 */}
+                                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                                    <div className="flex items-center space-x-3">
+                                                        {userInfo?.profileImageUrl ? (
+                                                            <img
+                                                                src={userInfo.profileImageUrl}
+                                                                alt="프로필"
+                                                                className="w-10 h-10 rounded-full object-cover"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                                                <span className="text-white font-bold">
+                                                                    {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                                {userInfo?.nickname || '사용자'}
+                                                            </p>
+                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                로그인됨
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                {/* 메뉴 항목 */}
+                                                <div className="py-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleLogout}
+                                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                                                    >
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                        </svg>
+                                                        <span>로그아웃</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </>
+                                    )}
+                                </div>
+                            ) : (
+                                <button
+                                    type="button"
+                                    onClick={handleLoginClick}
+                                    className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-full hover:bg-orange-600 transition-colors cursor-pointer"
+                                >
+                                    로그인
+                                </button>
+                            ))}
+
                             {/* Dark Mode Toggle */}
                             {showDarkModeToggle && (
                                 <button
@@ -205,6 +359,9 @@ const Header: React.FC<HeaderProps> = ({
                     </div>
                 </div>
             </div>
+
+            {/* 로그인 모달 */}
+            <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
         </header>
     );
 };

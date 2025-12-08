@@ -1,4 +1,6 @@
 //const API_BASE_URL = 'https://localhost:7171/api';
+//const API_BASE_URL = 'http://localhost:5151/api';
+//const API_BASE_URL = 'http://172.30.1.96:5151/api';
 const API_BASE_URL = 'https://api.shooq.live/api';
 
 export interface OptimizedImages {
@@ -307,5 +309,45 @@ export class ApiService {
         'Content-Type': 'application/json',
       },
     });
+  }
+
+  // 방문자 통계 - 일별 (주간)
+  static async getDailyVisitorStats(days: number = 7): Promise<Record<string, number>> {
+    return this.fetchApi<Record<string, number>>(`/accesslog/stats/daily/${days}`);
+  }
+
+  // 방문자 통계 - 주별
+  static async getWeeklyVisitorStats(weeks: number = 12): Promise<Record<string, number>> {
+    return this.fetchApi<Record<string, number>>(`/accesslog/stats/weekly/${weeks}`);
+  }
+
+  // 방문자 통계 - 월별
+  static async getMonthlyVisitorStats(months: number = 12): Promise<Record<string, number>> {
+    return this.fetchApi<Record<string, number>>(`/accesslog/stats/monthly/${months}`);
+  }
+
+  // 방문자 통계 - 전체 기간
+  static async getAllTimeVisitorStats(): Promise<Record<string, number>> {
+    return this.fetchApi<Record<string, number>>('/accesslog/stats/all-time');
+  }
+
+  // 방문자 통계 상세 (방문자수 + 방문횟수) - 일별
+  static async getDailyVisitorStatsDetailed(days: number = 7): Promise<Record<string, { visitors: number; visits: number }>> {
+    return this.fetchApi<Record<string, { visitors: number; visits: number }>>(`/accesslog/stats/daily-detailed/${days}`);
+  }
+
+  // 방문자 통계 상세 - 주별
+  static async getWeeklyVisitorStatsDetailed(weeks: number = 12): Promise<Record<string, { visitors: number; visits: number }>> {
+    return this.fetchApi<Record<string, { visitors: number; visits: number }>>(`/accesslog/stats/weekly-detailed/${weeks}`);
+  }
+
+  // 방문자 통계 상세 - 월별
+  static async getMonthlyVisitorStatsDetailed(months: number = 12): Promise<Record<string, { visitors: number; visits: number }>> {
+    return this.fetchApi<Record<string, { visitors: number; visits: number }>>(`/accesslog/stats/monthly-detailed/${months}`);
+  }
+
+  // 방문자 통계 상세 - 전체 기간
+  static async getAllTimeVisitorStatsDetailed(): Promise<Record<string, { visitors: number; visits: number }>> {
+    return this.fetchApi<Record<string, { visitors: number; visits: number }>>('/accesslog/stats/all-time-detailed');
   }
 }
