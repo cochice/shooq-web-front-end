@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { ApiService, AdminStats, DailyCrawlStats, DailySiteStats, SiteBbsInfo } from '@/lib/api';
 import PostDetailOverlay from '@/components/PostDetailOverlay';
 import VisitorChart from '@/components/VisitorChart';
+import HourlyVisitorChart from '@/components/HourlyVisitorChart';
 import {
     Chart as ChartJS,
     CategoryScale,
@@ -1107,6 +1108,11 @@ export default function AdminPage() {
                         {/* 방문자 통계 차트 */}
                         <div className="mb-8">
                             <VisitorChart isDarkMode={isDarkMode} />
+                        </div>
+
+                        {/* 시간대별 방문자 통계 차트 */}
+                        <div className="mb-8">
+                            <HourlyVisitorChart days={1} />
                         </div>
 
                         {/* 크롤링 통계 차트 섹션 */}

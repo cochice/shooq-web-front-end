@@ -350,4 +350,9 @@ export class ApiService {
   static async getAllTimeVisitorStatsDetailed(): Promise<Record<string, { visitors: number; visits: number }>> {
     return this.fetchApi<Record<string, { visitors: number; visits: number }>>('/accesslog/stats/all-time-detailed');
   }
+
+  // 방문자 통계 - 시간대별 (기본: 오늘)
+  static async getHourlyVisitorStats(days: number = 1): Promise<Record<string, { visitors: number; visits: number }>> {
+    return this.fetchApi<Record<string, { visitors: number; visits: number }>>(`/accesslog/stats/hourly/${days}`);
+  }
 }

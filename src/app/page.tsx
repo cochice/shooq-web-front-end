@@ -18,6 +18,7 @@ function HomeContent() {
     const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
     const keywordParam = searchParams.get('keyword'); // GET 파라미터에서 keyword 값 가져오기
     const postIdParam = searchParams.get('postId'); // GET 파라미터에서 postId 값 가져오기
+    const debugParam = searchParams.get('debug'); // GET 파라미터에서 debug 값 가져오기
 
     const [posts, setPosts] = useState<SiteBbsInfo[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -441,6 +442,18 @@ function HomeContent() {
     useEffect(() => {
         restoreSettings();
     }, [restoreSettings]);
+
+    // Eruda 디버그 콘솔 초기화 (debug=true 일 때만)
+    useEffect(() => {
+        if (debugParam === 'true' && typeof window !== 'undefined') {
+            import('eruda').then((eruda) => {
+                eruda.default.init();
+                console.log('📱 Eruda debug console initialized');
+            }).catch((error) => {
+                console.error('Failed to load Eruda:', error);
+            });
+        }
+    }, [debugParam]);
 
     // 드롭다운 외부 클릭 시 닫기
     useEffect(() => {
