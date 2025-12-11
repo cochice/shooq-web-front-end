@@ -36,6 +36,7 @@ export default function HourlyVisitorChart({ days = 1 }: HourlyVisitorChartProps
 
     useEffect(() => {
         loadHourlyData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [days]);
 
     const loadHourlyData = async () => {
@@ -109,7 +110,7 @@ export default function HourlyVisitorChart({ days = 1 }: HourlyVisitorChartProps
                 mode: 'index' as const,
                 intersect: false,
                 callbacks: {
-                    label: function (context: any) {
+                    label: function (context: { dataset: { label?: string }; parsed: { y: number | null } }) {
                         let label = context.dataset.label || '';
                         if (label) {
                             label += ': ';
@@ -144,8 +145,8 @@ export default function HourlyVisitorChart({ days = 1 }: HourlyVisitorChartProps
                     font: {
                         size: 11,
                     },
-                    callback: function (value: any) {
-                        return value.toLocaleString();
+                    callback: function (value: string | number) {
+                        return typeof value === 'number' ? value.toLocaleString() : value;
                     },
                 },
             },
