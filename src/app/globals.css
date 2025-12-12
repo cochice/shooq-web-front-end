@@ -28,7 +28,6 @@ body {
 /* Shooq content styles */
 .shooq-content {
     max-width: 100%;
-    background: #fff;
 }
 
 .shooq-content img {
@@ -44,6 +43,12 @@ body {
     border-bottom: 1px solid #efefef;
 }
 
+@media (prefers-color-scheme: dark) {
+    .shooq-content img:not(:last-child) {
+        border-bottom: 1px solid #374151;
+    }
+}
+
 .shooq-content .shooq-youtube {
     width: calc(100% - 32px);
     aspect-ratio: 16 / 9;
@@ -57,9 +62,15 @@ body {
 .shooq-content p {
     padding: 16px 20px;
     margin: 0;
-    line-height: 1.6;
-    font-size: 15px;
-    color: #262626;
+    line-height: 1.7;
+    font-size: 18px;
+    color: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+    .shooq-content p {
+        color: #e5e7eb;
+    }
 }
 
 @media (min-width: 769px) {

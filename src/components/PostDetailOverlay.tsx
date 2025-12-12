@@ -150,7 +150,7 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                 isNewWindowMode={false}
                 onToggleNewWindowMode={() => {}}
                 onHomeClick={onClose}
-                showDarkModeToggle={true}
+                showDarkModeToggle={false}
             />
 
             {/* 모바일 사이드바 */}
@@ -235,7 +235,7 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                             </h1>
 
                             {/* Shooq 스타일 컨텐츠 영역 */}
-                            <div className="shooq-content mb-6 dark:bg-gray-800">
+                            <div className="shooq-content mb-6">
                                 {/* 게시글 내용 */}
                                 {post.content && (
                                     <div
