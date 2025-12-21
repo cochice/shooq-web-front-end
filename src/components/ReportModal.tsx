@@ -2,6 +2,8 @@
 
 import React, { useState } from 'react';
 import { ApiService } from '@/lib/api';
+import Alert from '@/components/Alert';
+import { useAlert } from '@/hooks/useAlert';
 
 interface ReportModalProps {
     isOpen: boolean;
@@ -43,17 +45,26 @@ const ReportModal: React.FC<ReportModalProps> = ({
     const [selectedReason, setSelectedReason] = useState<string>('');
     const [description, setDescription] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const { isOpen: alertOpen, alertOptions, showAlert, hideAlert } = useAlert();
 
     if (!isOpen) return null;
 
     const handleSubmit = async () => {
         if (!selectedReason) {
-            alert('신고 사유를 선택해주세요.');
+            showAlert({
+                title: '경고',
+                message: '신고 사유를 선택해주세요.',
+                type: 'warning'
+            });
             return;
         }
 
         if (selectedReason === 'Other' && !description.trim()) {
-            alert('기타 사유를 입력해주세요.');
+            showAlert({
+                title: '경고',
+                message: '기타 사유를 입력해주세요.',
+                type: 'warning'
+            });
             return;
         }
 
@@ -67,13 +78,21 @@ const ReportModal: React.FC<ReportModalProps> = ({
                 description.trim() || undefined
             );
 
-            alert(result.message || '신고가 접수되었습니다.');
+            showAlert({
+                title: '완료',
+                message: result.message || '신고가 접수되었습니다.',
+                type: 'success'
+            });
             onClose();
             setSelectedReason('');
             setDescription('');
         } catch (error) {
             console.error('Report submission error:', error);
-            alert('신고 중 오류가 발생했습니다.');
+            showAlert({
+                title: '오류',
+                message: '신고 중 오류가 발생했습니다.',
+                type: 'error'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -84,8 +103,15 @@ const ReportModal: React.FC<ReportModalProps> = ({
     };
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
+        <>
+            <Alert
+                isOpen={alertOpen}
+                onClose={hideAlert}
+                {...alertOptions}
+            />
+
+            <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ backgroundColor: 'rgba(0, 0, 0, 0.3)' }}>
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-lg w-full mx-4 max-h-[90vh] overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
                     <h2 className="text-xl font-bold text-gray-900 dark:text-white">
@@ -126,11 +152,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
                                     key={reason.code}
                                     type="button"
                                     onClick={() => handleReasonClick(reason.code)}
-                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                                        selectedReason === reason.code
+                                    className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${selectedReason === reason.code
                                             ? 'bg-orange-500 text-white'
                                             : 'bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600'
-                                    }`}
+                                        }`}
                                 >
                                     {reason.label}
                                 </button>
@@ -150,11 +175,10 @@ const ReportModal: React.FC<ReportModalProps> = ({
                             disabled={selectedReason !== 'Other' && !selectedReason}
                             placeholder={selectedReason === 'Other' ? '신고 사유를 자세히 입력해주세요.' : '추가 설명이 필요하면 입력해주세요. (선택사항)'}
                             rows={4}
-                            className={`w-full px-3 py-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 ${
-                                selectedReason !== 'Other' && !selectedReason
+                            className={`w-full px-3 py-2 border rounded-lg text-gray-900 dark:text-white bg-white dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-orange-500 ${selectedReason !== 'Other' && !selectedReason
                                     ? 'border-gray-200 dark:border-gray-600 opacity-50 cursor-not-allowed'
                                     : 'border-gray-300 dark:border-gray-600'
-                            }`}
+                                }`}
                         />
                     </div>
                 </div>
@@ -179,6 +203,7 @@ const ReportModal: React.FC<ReportModalProps> = ({
                 </div>
             </div>
         </div>
+        </>
     );
 };
 
