@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -69,7 +70,7 @@ function WeekContent() {
     const yearParam = searchParams.get('yyyy');
     const monthParam = searchParams.get('mm');
     const weekParam = searchParams.get('w');
-    const siteParam = searchParams.get('site');
+    searchParams.get('site');
 
     // 현재 날짜 기준으로 기본값 설정
     const today = new Date();
@@ -207,6 +208,7 @@ function WeekContent() {
             setLoading(false);
             setShowTopLoadingBar(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentYear, currentMonth, currentWeek]);
 
     // 다크 모드 토글
@@ -503,7 +505,7 @@ function WeekContent() {
                     {/* Loading */}
                     {loading && (
                         <div className="flex justify-center items-center py-8">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                         </div>
                     )}
 
@@ -588,12 +590,13 @@ function WeekContent() {
                                                     ) : post.cloudinary_url && (
                                                         <div className="mb-3">
                                                             <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                                <img
+                                                                <Image
                                                                     src={post.cloudinary_url}
                                                                     alt="썸네일"
-                                                                    className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                                    width={160}
+                                                                    height={160}
+                                                                    className={`object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                                         }`}
-                                                                    loading="lazy"
                                                                     onError={(e) => {
                                                                         const target = e.target as HTMLImageElement;
                                                                         target.style.display = 'none';
@@ -735,12 +738,13 @@ function WeekContent() {
                                                                 ) : post.cloudinary_url && (
                                                                     <div className="mb-3">
                                                                         <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                                            <img
+                                                                            <Image
                                                                                 src={post.cloudinary_url}
                                                                                 alt="썸네일"
-                                                                                className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                                                width={160}
+                                                                                height={160}
+                                                                                className={`object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                                                     }`}
-                                                                                loading="lazy"
                                                                                 onError={(e) => {
                                                                                     const target = e.target as HTMLImageElement;
                                                                                     target.style.display = 'none';
@@ -803,7 +807,7 @@ export default function WeekPage() {
         <Suspense fallback={
             <div className="min-h-screen bg-white dark:bg-gray-900">
                 <div className="flex justify-center items-center py-8">
-                    <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                    <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                 </div>
             </div>
         }>

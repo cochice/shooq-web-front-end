@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -305,6 +306,28 @@ function HomeContent() {
             clearTimeout(timeoutId);
         };
     }, [loadMorePosts]);
+
+    // 모바일 백그라운드/포그라운드 전환 처리
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // 백그라운드로 갈 때: 진행 중인 로딩 취소
+                loadingRef.current = false;
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            } else {
+                // 포그라운드로 돌아올 때: 로딩 상태 초기화
+                loadingRef.current = false;
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
 
     // 다크 모드 토글
     const toggleDarkMode = () => {
@@ -722,14 +745,14 @@ function HomeContent() {
                     {/* Loading Initial Data */}
                     {loading && posts.length === 0 && !searchKeyword && (
                         <div className="flex justify-center items-center py-8">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                         </div>
                     )}
 
                     {/* Loading Search Results */}
                     {loading && posts.length === 0 && isSearchMode && (
                         <div className="flex justify-center items-center py-8">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="검색 중" width={100} height={100} unoptimized />
                         </div>
                     )}
 
@@ -843,12 +866,13 @@ function HomeContent() {
                                             ) : post.cloudinary_url && (
                                                 <div className="mb-3">
                                                     <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                        <img
+                                                        <Image
                                                             src={post.cloudinary_url}
                                                             alt="썸네일"
-                                                            className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                            width={160}
+                                                            height={160}
+                                                            className={`object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                                 }`}
-                                                            loading="lazy"
                                                             onError={(e) => {
                                                                 const target = e.target as HTMLImageElement;
                                                                 target.style.display = 'none';

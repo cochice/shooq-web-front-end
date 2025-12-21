@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import LoginModal from './LoginModal';
 
@@ -22,6 +23,7 @@ interface HeaderProps {
     onToggleNewWindowMode?: () => void;
     onHomeClick?: () => void;
     showDarkModeToggle?: boolean;
+    showUserMenu?: boolean;
 }
 
 const Header: React.FC<HeaderProps> = ({
@@ -40,12 +42,13 @@ const Header: React.FC<HeaderProps> = ({
     isNewWindowMode = false,
     onToggleNewWindowMode,
     onHomeClick, // eslint-disable-line @typescript-eslint/no-unused-vars
-    showDarkModeToggle = true
+    showDarkModeToggle = true,
+    showUserMenu = false
 }) => {
     const router = useRouter();
     const [isLoggedIn, setIsLoggedIn] = useState(false);
     const [userInfo, setUserInfo] = useState<{ nickname?: string; profileImageUrl?: string } | null>(null);
-    const [showUserMenu, setShowUserMenu] = useState(false);
+    const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const [showLoginModal, setShowLoginModal] = useState(false);
 
     // 로그인 상태 체크 함수
@@ -95,7 +98,7 @@ const Header: React.FC<HeaderProps> = ({
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
         setIsLoggedIn(false);
-        setShowUserMenu(false);
+        setIsUserMenuOpen(false);
         router.push('/');
     };
 
@@ -115,10 +118,11 @@ const Header: React.FC<HeaderProps> = ({
                         }}
                         className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                     >
-                        <img
+                        <Image
                             src="/shooq_cat_logo.png"
                             alt="Shooq Logo"
-                            className="w-10 h-10"
+                            width={40}
+                            height={40}
                         />
                         <span className="text-xl font-bold text-gray-900 dark:text-white">Shooq Live</span>
                     </Link>
@@ -155,10 +159,11 @@ const Header: React.FC<HeaderProps> = ({
                                 }}
                                 className="flex items-center space-x-2 hover:opacity-80 transition-opacity"
                             >
-                                <img
+                                <Image
                                     src="/shooq_cat_logo.png"
                                     alt="Shooq Logo"
-                                    className="w-10 h-10"
+                                    width={40}
+                                    height={40}
                                 />
                                 <span className="text-xl font-bold text-gray-900 dark:text-white hidden md:block">Shooq</span>
                             </Link>
@@ -201,8 +206,22 @@ const Header: React.FC<HeaderProps> = ({
                         ) : null}
 
                         <div className="absolute right-4 flex items-center space-x-2 sm:space-x-4">
-                            {/* Unread Only Mode Toggle */}
-                            {onToggleUnreadOnly && (
+                            {/* Create Post Button (로그인 시에만 표시) */}
+                            {isLoggedIn && (
+                                <Link
+                                    href="/post/new"
+                                    className="p-2 text-white bg-orange-500 rounded-full hover:bg-orange-600 transition-colors"
+                                    aria-label="새 글 작성"
+                                    title="새 글 작성"
+                                >
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                                    </svg>
+                                </Link>
+                            )}
+
+                            {/* Unread Only Mode Toggle - Hidden */}
+                            {onToggleUnreadOnly && false && (
                                 <button
                                     type="button"
                                     onClick={onToggleUnreadOnly}
@@ -239,7 +258,7 @@ const Header: React.FC<HeaderProps> = ({
                             )}
 
                             {/* 전체 보기 버튼 (main 페이지에서만) */}
-                            {title && (
+                            {title && title !== '프로필' && (
                                 <Link
                                     href="/hot"
                                     className="px-4 py-2 text-sm font-medium text-orange-500 border border-orange-500 rounded-full hover:bg-orange-50 dark:hover:bg-orange-900 transition-colors"
@@ -248,93 +267,114 @@ const Header: React.FC<HeaderProps> = ({
                                 </Link>
                             )}
 
-                            {/* User Menu / Login Button - Hidden */}
-                            {false && (isLoggedIn ? (
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        onClick={() => setShowUserMenu(!showUserMenu)}
-                                        className="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
-                                        aria-label="사용자 메뉴"
-                                    >
-                                        {userInfo?.profileImageUrl ? (
-                                            <img
-                                                src={userInfo?.profileImageUrl}
-                                                alt="프로필"
-                                                className="w-8 h-8 rounded-full object-cover"
-                                            />
-                                        ) : (
-                                            <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
-                                                <span className="text-white font-bold text-sm">
-                                                    {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
+                            {/* User Menu / Login Button */}
+                            {showUserMenu && (
+                                <>
+                                    {isLoggedIn ? (
+                                        <div className="relative">
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                                                className="flex items-center space-x-2 p-2 text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-800"
+                                                aria-label="사용자 메뉴"
+                                            >
+                                                {userInfo?.profileImageUrl ? (
+                                                    <Image
+                                                        src={userInfo?.profileImageUrl}
+                                                        alt="프로필"
+                                                        width={32}
+                                                        height={32}
+                                                        className="rounded-full object-cover"
+                                                    />
+                                                ) : (
+                                                    <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center">
+                                                        <span className="text-white font-bold text-sm">
+                                                            {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
+                                                        </span>
+                                                    </div>
+                                                )}
+                                                <span className="hidden sm:block text-sm font-medium">
+                                                    {userInfo?.nickname || '사용자'}
                                                 </span>
-                                            </div>
-                                        )}
-                                        <span className="hidden sm:block text-sm font-medium">
-                                            {userInfo?.nickname || '사용자'}
-                                        </span>
-                                    </button>
+                                            </button>
 
-                                    {showUserMenu && (
-                                        <>
-                                            <div
-                                                className="fixed inset-0 z-10"
-                                                onClick={() => setShowUserMenu(false)}
-                                            ></div>
-                                            <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
-                                                {/* 사용자 정보 */}
-                                                <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
-                                                    <div className="flex items-center space-x-3">
-                                                        {userInfo?.profileImageUrl ? (
-                                                            <img
-                                                                src={userInfo?.profileImageUrl}
-                                                                alt="프로필"
-                                                                className="w-10 h-10 rounded-full object-cover"
-                                                            />
-                                                        ) : (
-                                                            <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
-                                                                <span className="text-white font-bold">
-                                                                    {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
-                                                                </span>
+                                            {isUserMenuOpen && (
+                                                <>
+                                                    <div
+                                                        className="fixed inset-0 z-10"
+                                                        onClick={() => setIsUserMenuOpen(false)}
+                                                    ></div>
+                                                    <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-20">
+                                                        {/* 사용자 정보 */}
+                                                        <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
+                                                            <div className="flex items-center space-x-3">
+                                                                {userInfo?.profileImageUrl ? (
+                                                                    <Image
+                                                                        src={userInfo?.profileImageUrl}
+                                                                        alt="프로필"
+                                                                        width={40}
+                                                                        height={40}
+                                                                        className="rounded-full object-cover"
+                                                                    />
+                                                                ) : (
+                                                                    <div className="w-10 h-10 rounded-full bg-orange-500 flex items-center justify-center">
+                                                                        <span className="text-white font-bold">
+                                                                            {userInfo?.nickname?.charAt(0).toUpperCase() || 'U'}
+                                                                        </span>
+                                                                    </div>
+                                                                )}
+                                                                <div className="flex-1 min-w-0">
+                                                                    <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                                                                        {userInfo?.nickname || '사용자'}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                                                                        로그인됨
+                                                                    </p>
+                                                                </div>
                                                             </div>
-                                                        )}
-                                                        <div className="flex-1 min-w-0">
-                                                            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
-                                                                {userInfo?.nickname || '사용자'}
-                                                            </p>
-                                                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                                                                로그인됨
-                                                            </p>
+                                                        </div>
+
+                                                        {/* 메뉴 항목 */}
+                                                        <div className="py-1">
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => {
+                                                                    setIsUserMenuOpen(false);
+                                                                    router.push('/profile');
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                                </svg>
+                                                                <span>프로필</span>
+                                                            </button>
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleLogout}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                                                </svg>
+                                                                <span>로그아웃</span>
+                                                            </button>
                                                         </div>
                                                     </div>
-                                                </div>
-
-                                                {/* 메뉴 항목 */}
-                                                <div className="py-1">
-                                                    <button
-                                                        type="button"
-                                                        onClick={handleLogout}
-                                                        className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center space-x-2"
-                                                    >
-                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                                                        </svg>
-                                                        <span>로그아웃</span>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </>
+                                                </>
+                                            )}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            onClick={handleLoginClick}
+                                            className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-full hover:bg-orange-600 transition-colors cursor-pointer"
+                                        >
+                                            로그인
+                                        </button>
                                     )}
-                                </div>
-                            ) : (
-                                <button
-                                    type="button"
-                                    onClick={handleLoginClick}
-                                    className="px-4 py-2 text-sm font-medium text-white bg-orange-500 rounded-full hover:bg-orange-600 transition-colors cursor-pointer"
-                                >
-                                    로그인
-                                </button>
-                            ))}
+                                </>
+                            )}
 
                             {/* Dark Mode Toggle */}
                             {showDarkModeToggle && (

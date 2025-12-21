@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { ApiService, SiteBbsInfoMain } from '@/lib/api';
 import Link from 'next/link';
+import Image from 'next/image';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
 import YouTubeVideo from '@/components/YouTubeVideo';
@@ -305,12 +306,13 @@ export default function Home() {
                     ) : post.cloudinary_url && (
                         <div className="mb-3">
                             <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                <img
+                                <Image
                                     src={post.cloudinary_url}
                                     alt="썸네일"
-                                    className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                    width={160}
+                                    height={160}
+                                    className={`object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                         }`}
-                                    loading="lazy"
                                     onError={(e) => {
                                         const target = e.target as HTMLImageElement;
                                         target.style.display = 'none';

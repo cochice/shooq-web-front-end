@@ -2,16 +2,16 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfoMain } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
-import YouTubeVideo from '@/components/YouTubeVideo';
 import { STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
 function NewsContent() {
     const searchParams = useSearchParams();
-    const siteParam = searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
+    searchParams.get('site'); // GET 파라미터에서 site 값 가져오기
 
     const [posts, setPosts] = useState<SiteBbsInfoMain[]>([]);
     const [currentPage, setCurrentPage] = useState(1);
@@ -42,9 +42,6 @@ function NewsContent() {
 
     // 설정 로드 완료 상태
     const [isSettingsLoaded, setIsSettingsLoaded] = useState(false);
-
-    // 설정 복원 진행 중 상태 (중복 API 호출 방지)
-    const [isRestoringSettings, setIsRestoringSettings] = useState(true);
 
     // 초기 로드 완료 상태 (사용자의 필터 변경과 구분)
     const [initialLoadCompleted, setInitialLoadCompleted] = useState(false);
@@ -233,6 +230,26 @@ function NewsContent() {
         };
     }, [loadMorePosts]);
 
+    // 모바일 백그라운드/포그라운드 전환 처리
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // 백그라운드로 갈 때: 진행 중인 로딩 취소
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            } else {
+                // 포그라운드로 돌아올 때: 로딩 상태 초기화
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
+
     // 다크 모드 토글
     const toggleDarkMode = () => {
         const newDarkMode = !isDarkMode;
@@ -335,7 +352,6 @@ function NewsContent() {
         });
 
         // 설정 복원 완료 표시
-        setIsRestoringSettings(false);
         setIsSettingsLoaded(true);
     }, []);
 
@@ -475,7 +491,7 @@ function NewsContent() {
                         <div className="flex justify-center items-center py-8">
                             {/* PC에서는 상단 로딩바를 사용하므로 로딩 애니메이션 숨김 */}
                             <div className="lg:hidden">
-                                <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                                <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                             </div>
                             {/* PC에서만 표시되는 간단한 텍스트 */}
                             <div className="hidden lg:block text-center">
@@ -489,7 +505,7 @@ function NewsContent() {
                         <div className="flex justify-center items-center py-8">
                             {/* 모바일에서는 기존 애니메이션 사용 */}
                             <div className="lg:hidden">
-                                <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
+                                <Image src="/cat_in_a_rocket_loading.gif" alt="검색 중" width={100} height={100} unoptimized />
                             </div>
                             {/* PC에서는 간단한 텍스트 */}
                             <div className="hidden lg:block text-center">

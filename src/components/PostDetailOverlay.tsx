@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import { getSiteLogo } from '@/constants/content';
 import Header from './Header';
@@ -179,7 +180,7 @@ export default function PostDetailOverlay({ postId, onClose, isDarkMode, onToggl
                     </button>
                     {loading ? (
                         <div className="flex justify-center items-center py-20">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                         </div>
                     ) : error || !post ? (
                         <div className="bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg p-4">

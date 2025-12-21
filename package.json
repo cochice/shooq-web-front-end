@@ -9,6 +9,12 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@editorjs/editorjs": "2.31.0",
+    "@editorjs/embed": "2.8.0",
+    "@editorjs/header": "2.8.8",
+    "@editorjs/image": "2.10.3",
+    "@editorjs/link": "2.6.2",
+    "@editorjs/list": "2.0.9",
     "chart.js": "4.5.0",
     "chartjs-plugin-datalabels": "2.2.0",
     "colorthief": "2.6.0",

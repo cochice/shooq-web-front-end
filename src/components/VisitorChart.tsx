@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
     Chart as ChartJS,
@@ -37,11 +37,7 @@ export default function VisitorChart({ isDarkMode = false }: VisitorChartProps) 
     const [visitorData, setVisitorData] = useState<Record<string, { visitors: number; visits: number }>>({});
     const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        loadVisitorData();
-    }, [period]);
-
-    const loadVisitorData = async () => {
+    const loadVisitorData = useCallback(async () => {
         try {
             setLoading(true);
             let data: Record<string, { visitors: number; visits: number }> = {};
@@ -64,7 +60,11 @@ export default function VisitorChart({ isDarkMode = false }: VisitorChartProps) 
         } finally {
             setLoading(false);
         }
-    };
+    }, [period]);
+
+    useEffect(() => {
+        loadVisitorData();
+    }, [loadVisitorData]);
 
     const formatLabel = (dateStr: string): string => {
         const date = new Date(dateStr);

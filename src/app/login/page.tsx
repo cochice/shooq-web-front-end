@@ -1,17 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
 export default function LoginPage() {
     const router = useRouter();
-    const [isDarkMode, setIsDarkMode] = useState(false);
 
     useEffect(() => {
         // 다크모드 설정 불러오기
         const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-        setIsDarkMode(savedDarkMode);
         if (savedDarkMode) {
             document.documentElement.classList.add('dark');
         }

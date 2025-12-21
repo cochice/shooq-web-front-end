@@ -119,21 +119,85 @@ export interface TrendingCommunity {
   optimizedImagesList?: OptimizedImages[];
 }
 
+export interface Report {
+  reportId: number;
+  reporterId?: number;
+  reporterNickname?: string;
+  contentType: string;
+  contentId: number;
+  reasonCode: string;
+  description?: string;
+  status: string;
+  createdAt: string;
+  reviewedAt?: string;
+  reviewerId?: number;
+  reviewNote?: string;
+  post?: SiteBbsInfo;
+}
+
+export interface UserProfile {
+  userId: number;
+  email?: string;
+  nickname: string;
+  profileImageUrl?: string;
+  birthDate?: string;
+  isAdultVerified: boolean;
+  status: string;
+  isEmailVerified: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastLoginAt?: string;
+}
+
+export interface UserConsent {
+  consentId: number;
+  userId: number;
+  consentType: string;
+  consentVersion: string;
+  isRequired: boolean;
+  isAgreed: boolean;
+  agreedAt: string;
+  isWithdrawn: boolean;
+  withdrawnAt?: string;
+  ipAddress?: string;
+  userAgent?: string;
+}
+
+export interface UserSocialLogin {
+  socialLoginId: number;
+  userId: number;
+  provider: string;
+  providerUserId: string;
+  providerData?: string;
+  connectedAt: string;
+  lastSyncedAt: string;
+}
+
 export class ApiService {
   private static async fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'ngrok-skip-browser-warning': 'true'
+    };
+
+    // 인증 토큰이 있으면 헤더에 추가
+    if (typeof window !== 'undefined') {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+    }
+
     const response = await fetch(`${API_BASE_URL}${endpoint}`, {
       method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'ngrok-skip-browser-warning': 'true'
-      },
+      headers,
       ...options,
     });
 
     if (!response.ok) {
       throw new Error(`API call failed: ${response.status} ${response.statusText}`);
     }
- 
+
     return response.json();
   }
 
@@ -354,5 +418,77 @@ export class ApiService {
   // 방문자 통계 - 시간대별 (기본: 오늘)
   static async getHourlyVisitorStats(days: number = 1): Promise<Record<string, { visitors: number; visits: number }>> {
     return this.fetchApi<Record<string, { visitors: number; visits: number }>>(`/accesslog/stats/hourly/${days}`);
+  }
+
+  // 사용자 프로필 조회
+  static async getUserProfile(): Promise<UserProfile> {
+    return this.fetchApi<UserProfile>('/users/profile');
+  }
+
+  // 사용자 동의 항목 조회
+  static async getUserConsents(userId: number): Promise<UserConsent[]> {
+    const response = await this.fetchApi<{ success: boolean; data: UserConsent[] }>(`/users/${userId}/consents`);
+    return response.data;
+  }
+
+  // 사용자 소셜 로그인 연결 조회
+  static async getUserSocialLogins(userId: number): Promise<UserSocialLogin[]> {
+    const response = await this.fetchApi<{ success: boolean; data: UserSocialLogin[] }>(`/users/${userId}/social-logins`);
+    return response.data;
+  }
+
+  // 신고 제출
+  static async submitReport(
+    contentType: string,
+    contentId: number,
+    reasonCode: string,
+    description?: string
+  ): Promise<{ message: string }> {
+    return this.fetchApi<{ message: string }>('/reports', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contentType,
+        contentId,
+        reasonCode,
+        description,
+      }),
+    });
+  }
+
+  // 관리자 - 신고 목록 조회
+  static async getReports(
+    page: number = 1,
+    pageSize: number = 20,
+    status?: string
+  ): Promise<PagedResult<Report>> {
+    const params = new URLSearchParams({
+      page: page.toString(),
+      pageSize: pageSize.toString()
+    });
+
+    if (status) params.append('status', status);
+
+    return this.fetchApi<PagedResult<Report>>(`/admin/reports?${params.toString()}`);
+  }
+
+  // 관리자 - 신고 처리
+  static async updateReportStatus(
+    reportId: number,
+    status: string,
+    reviewNote?: string
+  ): Promise<{ message: string }> {
+    return this.fetchApi<{ message: string }>(`/admin/reports/${reportId}/status`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        status,
+        reviewNote,
+      }),
+    });
   }
 }

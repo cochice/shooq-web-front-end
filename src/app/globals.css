@@ -34,12 +34,12 @@ body {
     width: 100%;
     height: auto;
     display: block;
-    margin: 0;
+    margin: 12px 0;
     border: none;
 }
 
-/* 이미지 사이 얇은 구분선 */
-.shooq-content img:not(:last-child) {
+/* 이미지 사이 얇은 구분선 - 제거 (margin으로 간격 확보) */
+/* .shooq-content img:not(:last-child) {
     border-bottom: 1px solid #efefef;
 }
 
@@ -47,7 +47,7 @@ body {
     .shooq-content img:not(:last-child) {
         border-bottom: 1px solid #374151;
     }
-}
+} */
 
 .shooq-content .shooq-youtube {
     width: calc(100% - 32px);
@@ -61,10 +61,15 @@ body {
 
 .shooq-content p {
     padding: 16px 20px;
-    margin: 0;
+    margin: 12px 0;
     line-height: 1.7;
     font-size: 18px;
     color: #111827;
+}
+
+.shooq-content a {
+    width: 100%;
+    overflow-wrap: break-word;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -78,4 +83,224 @@ body {
         max-width: 600px;
         margin: 0 auto;
     }
+}
+
+/* Editor.js styles */
+.ce-block__content,
+.ce-toolbar__content {
+    max-width: 100%;
+}
+
+.codex-editor__redactor {
+    padding-bottom: 0 !important;
+}
+
+.ce-block {
+    padding: 0.4em 0;
+}
+
+.ce-toolbar__plus,
+.ce-toolbar__settings-btn {
+    color: #6b7280;
+}
+
+.dark .ce-toolbar__plus,
+.dark .ce-toolbar__settings-btn {
+    color: #9ca3af;
+}
+
+.ce-inline-toolbar,
+.ce-conversion-toolbar,
+.ce-settings {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+}
+
+.dark .ce-inline-toolbar,
+.dark .ce-conversion-toolbar,
+.dark .ce-settings {
+    background: #1f2937;
+    border: 1px solid #374151;
+}
+
+.ce-inline-tool,
+.ce-conversion-tool,
+.ce-settings__button {
+    color: #374151;
+}
+
+.dark .ce-inline-tool,
+.dark .ce-conversion-tool,
+.dark .ce-settings__button {
+    color: #d1d5db;
+}
+
+.ce-inline-tool:hover,
+.ce-conversion-tool:hover,
+.ce-settings__button:hover {
+    background-color: #f3f4f6;
+}
+
+.dark .ce-inline-tool:hover,
+.dark .ce-conversion-tool:hover,
+.dark .ce-settings__button:hover {
+    background-color: #374151;
+}
+
+.ce-popover {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.dark .ce-popover {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.ce-popover__item {
+    color: #374151 !important;
+}
+
+.dark .ce-popover__item {
+    color: #374151 !important;
+}
+
+.ce-popover__item:hover {
+    background-color: #f3f4f6 !important;
+}
+
+.dark .ce-popover__item:hover {
+    background-color: #f3f4f6 !important;
+}
+
+/* Toolbox (Add 버튼 메뉴) */
+.ce-toolbox {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.dark .ce-toolbox {
+    background: #ffffff !important;
+    border: 1px solid #e5e7eb !important;
+}
+
+.ce-toolbox__button {
+    color: #374151 !important;
+}
+
+.dark .ce-toolbox__button {
+    color: #374151 !important;
+}
+
+.cdx-block {
+    color: #111827;
+}
+
+.dark .cdx-block {
+    color: #e5e7eb;
+}
+
+.ce-paragraph {
+    line-height: 1.7;
+    font-size: 16px;
+    color: #111827 !important;
+}
+
+.dark .ce-paragraph {
+    color: #e5e7eb !important;
+}
+
+/* Editor.js 헤더 스타일 */
+.ce-header {
+    color: #111827 !important;
+}
+
+.dark .ce-header {
+    color: #f3f4f6 !important;
+}
+
+/* Editor.js 입력 필드 */
+.codex-editor [contentEditable=true] {
+    color: #111827 !important;
+}
+
+.dark .codex-editor [contentEditable=true] {
+    color: #e5e7eb !important;
+}
+
+/* Editor.js 모든 텍스트 요소 */
+.codex-editor__redactor {
+    color: #111827 !important;
+}
+
+.dark .codex-editor__redactor {
+    color: #e5e7eb !important;
+}
+
+/* Editor.js 블록 내부 텍스트 - 더 구체적인 선택자 */
+.ce-block__content,
+.ce-block__content *,
+.ce-block__content div,
+.ce-block__content p,
+.ce-block__content span {
+    color: #111827 !important;
+}
+
+.dark .ce-block__content,
+.dark .ce-block__content *,
+.dark .ce-block__content div,
+.dark .ce-block__content p,
+.dark .ce-block__content span {
+    color: #e5e7eb !important;
+}
+
+/* Editor.js 리스트 아이템 */
+.cdx-list__item {
+    color: #111827 !important;
+}
+
+.dark .cdx-list__item {
+    color: #e5e7eb !important;
+}
+
+.editor-wrapper {
+    width: 100%;
+}
+
+/* Editor.js placeholder 스타일 */
+.codex-editor--empty .ce-block:first-child .ce-paragraph[data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: #9ca3af;
+    font-weight: normal;
+    opacity: 0.6;
+}
+
+.dark .codex-editor--empty .ce-block:first-child .ce-paragraph[data-placeholder]:empty::before {
+    color: #6b7280;
+}
+
+/* 최우선 순위 다크모드 텍스트 색상 - 가장 마지막에 위치하여 우선순위 확보 */
+.dark #editorjs,
+.dark #editorjs *,
+.dark #editorjs .ce-paragraph,
+.dark #editorjs .ce-header,
+.dark #editorjs .cdx-block,
+.dark #editorjs [contentEditable=true],
+.dark #editorjs .ce-block__content,
+.dark #editorjs .ce-block__content *,
+.dark #editorjs .cdx-list__item {
+    color: #e5e7eb !important;
+}
+
+/* 일반 모드 텍스트 색상 */
+#editorjs,
+#editorjs *,
+#editorjs .ce-paragraph,
+#editorjs .ce-header,
+#editorjs .cdx-block,
+#editorjs [contentEditable=true],
+#editorjs .ce-block__content,
+#editorjs .ce-block__content *,
+#editorjs .cdx-list__item {
+    color: #111827 !important;
 }

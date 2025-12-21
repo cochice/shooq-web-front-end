@@ -49,6 +49,8 @@ export default function YouTubeVideo({ url, className = '' }: YouTubeVideoProps)
 
     // Intersection Observer로 비디오가 화면에 보이는지 감지
     useEffect(() => {
+        const currentContainer = containerRef.current;
+
         const observer = new IntersectionObserver(
             (entries) => {
                 entries.forEach((entry) => {
@@ -67,14 +69,12 @@ export default function YouTubeVideo({ url, className = '' }: YouTubeVideoProps)
             }
         );
 
-        if (containerRef.current) {
-            observer.observe(containerRef.current);
+        if (currentContainer) {
+            observer.observe(currentContainer);
         }
 
         return () => {
-            if (containerRef.current) {
-                observer.unobserve(containerRef.current);
-            }
+            observer.disconnect();
         };
     }, [shouldAutoplay]);
 

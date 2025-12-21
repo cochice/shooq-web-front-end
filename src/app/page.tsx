@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Sidebar from '@/components/Sidebar';
 import Header from '@/components/Header';
@@ -9,6 +10,7 @@ import YouTubeVideo from '@/components/YouTubeVideo';
 import ImageCarousel from '@/components/ImageCarousel';
 import PostDetailOverlay from '@/components/PostDetailOverlay';
 import TrendingCommunities from '@/components/TrendingCommunities';
+import ReportModal from '@/components/ReportModal';
 import { ADULT_CONTENT_KEYWORDS, STORAGE_KEYS, getSiteLogo } from '@/constants/content';
 import { StorageUtils } from '@/utils/storage';
 
@@ -63,6 +65,31 @@ function HomeContent() {
 
     // 로딩 상태를 ref로 관리하여 useCallback 의존성 문제 해결
     const loadingRef = useRef(false);
+
+    // 신고 모달 상태
+    const [isReportModalOpen, setIsReportModalOpen] = useState(false);
+    const [reportTarget, setReportTarget] = useState<{ contentId: number; contentTitle: string } | null>(null);
+
+    // 더보기 메뉴 상태
+    const [openMenuPostId, setOpenMenuPostId] = useState<string | null>(null);
+
+    // 외부 클릭 시 메뉴 닫기
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const target = event.target as HTMLElement;
+            if (openMenuPostId && !target.closest('.more-menu-container')) {
+                setOpenMenuPostId(null);
+            }
+        };
+
+        if (openMenuPostId) {
+            document.addEventListener('click', handleClickOutside);
+        }
+
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+        };
+    }, [openMenuPostId]);
 
     // HTML 엔티티 디코딩 함수
     const decodeHtmlEntities = (text: string) => {
@@ -181,11 +208,12 @@ function HomeContent() {
 
     // 더 많은 포스트 로드
     const loadMorePosts = useCallback(async () => {
-        if (loading || !hasMore) {
+        if (loadingRef.current || !hasMore) {
             return;
         }
 
         try {
+            loadingRef.current = true;
             setLoading(true);
             if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
                 setShowTopLoadingBar(true);
@@ -214,10 +242,11 @@ function HomeContent() {
             console.error('추가 포스트 로드 실패:', error);
             setError('추가 데이터를 불러오는데 실패했습니다.');
         } finally {
+            loadingRef.current = false;
             setLoading(false);
             setShowTopLoadingBar(false);
         }
-    }, [currentPage, loading, hasMore, maxNo, siteParam, sortBy, topPeriod]);
+    }, [currentPage, hasMore, maxNo, siteParam, sortBy, topPeriod]);
 
     // 홈 버튼 클릭 시 새글 불러오기, 최상단 스크롤, 검색 필터만 초기화
     const handleHomeClick = () => {
@@ -311,6 +340,28 @@ function HomeContent() {
             clearTimeout(timeoutId);
         };
     }, [handleScrollEvent]);
+
+    // 모바일 백그라운드/포그라운드 전환 처리
+    useEffect(() => {
+        const handleVisibilityChange = () => {
+            if (document.hidden) {
+                // 백그라운드로 갈 때: 진행 중인 로딩 취소
+                loadingRef.current = false;
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            } else {
+                // 포그라운드로 돌아올 때: 로딩 상태 초기화
+                loadingRef.current = false;
+                setLoading(false);
+                setShowTopLoadingBar(false);
+            }
+        };
+
+        document.addEventListener('visibilitychange', handleVisibilityChange);
+        return () => {
+            document.removeEventListener('visibilitychange', handleVisibilityChange);
+        };
+    }, []);
 
     // 다크 모드 토글
     const toggleDarkMode = () => {
@@ -731,14 +782,14 @@ function HomeContent() {
                     {/* Loading Initial Data */}
                     {loading && posts.length === 0 && !searchKeyword && (
                         <div className="flex justify-center items-center py-8">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                         </div>
                     )}
 
                     {/* Loading Search Results */}
                     {loading && posts.length === 0 && isSearchMode && (
                         <div className="flex justify-center items-center py-8">
-                            <img src="/cat_in_a_rocket_loading.gif" alt="검색 중" />
+                            <Image src="/cat_in_a_rocket_loading.gif" alt="검색 중" width={100} height={100} unoptimized />
                         </div>
                     )}
 
@@ -756,48 +807,89 @@ function HomeContent() {
                                     }`}>
                                     <div className="p-4 flex flex-col items-center">
                                         <div className="w-full max-w-3xl">
-                                            <div className="flex items-center text-xs text-gray-500 dark:text-gray-400 mb-2">
-                                                {post.site && (
-                                                    <>
-                                                        <div className="flex items-center space-x-2">
-                                                            <div
-                                                                className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
-                                                                style={{
-                                                                    backgroundColor: getSiteLogo(post.site).bgColor,
-                                                                    color: getSiteLogo(post.site).textColor
-                                                                }}
-                                                            >
-                                                                {getSiteLogo(post.site).letter}
+                                            <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                                <div className="flex items-center">
+                                                    {post.site && (
+                                                        <>
+                                                            <div className="flex items-center space-x-2">
+                                                                <div
+                                                                    className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                                                                    style={{
+                                                                        backgroundColor: getSiteLogo(post.site).bgColor,
+                                                                        color: getSiteLogo(post.site).textColor
+                                                                    }}
+                                                                >
+                                                                    {getSiteLogo(post.site).letter}
+                                                                </div>
+                                                                <span className="font-semibold">{post.site}</span>
                                                             </div>
-                                                            <span className="font-semibold">{post.site}</span>
+                                                            <span className="mx-1">•</span>
+                                                        </>
+                                                    )}
+                                                    {post.author && (
+                                                        <>
+                                                            <span><span className="hidden sm:inline">Posted by </span>{post.author}</span>
+                                                            <span className="mx-1">•</span>
+                                                        </>
+                                                    )}
+                                                    <span>{formatDate(post.date)}</span>
+                                                    {post.url && (
+                                                        <>
+                                                            <span className="mx-1">•</span>
+                                                            <a
+                                                                href={post.url}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="text-orange-500 hover:text-orange-600 flex items-center"
+                                                                onClick={() => markPostAsRead(postId)}
+                                                            >
+                                                                원본 링크
+                                                                <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                                                </svg>
+                                                            </a>
+                                                        </>
+                                                    )}
+                                                </div>
+
+                                                {/* 더보기 버튼 */}
+                                                <div className="relative more-menu-container">
+                                                    <button
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setOpenMenuPostId(openMenuPostId === postId ? null : postId);
+                                                        }}
+                                                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
+                                                        title="더보기"
+                                                    >
+                                                        <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="currentColor" viewBox="0 0 24 24">
+                                                            <path d="M12 8c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm0 2c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0 6c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2z" />
+                                                        </svg>
+                                                    </button>
+
+                                                    {/* 드롭다운 메뉴 */}
+                                                    {openMenuPostId === postId && (
+                                                        <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 z-10">
+                                                            <button
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setReportTarget({
+                                                                        contentId: post.no,
+                                                                        contentTitle: post.title || '제목 없음'
+                                                                    });
+                                                                    setIsReportModalOpen(true);
+                                                                    setOpenMenuPostId(null);
+                                                                }}
+                                                                className="w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors flex items-center space-x-2"
+                                                            >
+                                                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 21v-4m0 0V5a2 2 0 012-2h6.5l1 1H21l-3 6 3 6h-8.5l-1-1H5a2 2 0 00-2 2zm9-13.5V9" />
+                                                                </svg>
+                                                                <span>신고</span>
+                                                            </button>
                                                         </div>
-                                                        <span className="mx-1">•</span>
-                                                    </>
-                                                )}
-                                                {post.author && (
-                                                    <>
-                                                        <span><span className="hidden sm:inline">Posted by </span>{post.author}</span>
-                                                        <span className="mx-1">•</span>
-                                                    </>
-                                                )}
-                                                <span>{formatDate(post.date)}</span>
-                                                {post.url && (
-                                                    <>
-                                                        <span className="mx-1">•</span>
-                                                        <a
-                                                            href={post.url}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            className="text-orange-500 hover:text-orange-600 flex items-center"
-                                                            onClick={() => markPostAsRead(postId)}
-                                                        >
-                                                            원본 링크
-                                                            <svg className="inline-block ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                                            </svg>
-                                                        </a>
-                                                    </>
-                                                )}
+                                                    )}
+                                                </div>
                                             </div>
 
                                             {(post.optimizedImagesList && post.optimizedImagesList.length > 0) ? (
@@ -852,12 +944,13 @@ function HomeContent() {
                                             ) : post.cloudinary_url && (
                                                 <div className="mb-3">
                                                     <div className="inline-block bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                                                        <img
+                                                        <Image
                                                             src={post.cloudinary_url}
                                                             alt="썸네일"
-                                                            className={`max-w-[160px] max-h-[160px] object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
+                                                            width={160}
+                                                            height={160}
+                                                            className={`object-cover rounded-lg ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                                 }`}
-                                                            loading="lazy"
                                                             onError={(e) => {
                                                                 const target = e.target as HTMLImageElement;
                                                                 target.style.display = 'none';
@@ -946,6 +1039,20 @@ function HomeContent() {
                         const newUrl = params.toString() ? `/?${params.toString()}` : '/';
                         router.push(newUrl, { scroll: false });
                     }}
+                />
+            )}
+
+            {/* 신고 모달 */}
+            {isReportModalOpen && reportTarget && (
+                <ReportModal
+                    isOpen={isReportModalOpen}
+                    onClose={() => {
+                        setIsReportModalOpen(false);
+                        setReportTarget(null);
+                    }}
+                    contentType="Post"
+                    contentId={reportTarget.contentId}
+                    contentTitle={reportTarget.contentTitle}
                 />
             )}
 

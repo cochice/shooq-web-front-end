@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef } from 'react';
+import Image from 'next/image';
 import { OptimizedImages } from '@/lib/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Keyboard, Zoom } from 'swiper/modules';
@@ -26,7 +27,7 @@ const addYouTubeMuteParam = (url: string) => {
     return urlObj.toString();
 };
 
-export default function ImageCarousel({ images, isAdultContent = false, title }: ImageCarouselProps) {
+export default function ImageCarousel({ images, isAdultContent = false }: ImageCarouselProps) {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [imageDimensions, setImageDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
     const [shouldHide, setShouldHide] = useState(false);
@@ -36,7 +37,6 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
     const [fullscreenSwiper, setFullscreenSwiper] = useState<SwiperType | null>(null);
     const [maxHeight, setMaxHeight] = useState<number>(0);
     const [containerWidth, setContainerWidth] = useState<number>(0);
-    const [videoDimensions, setVideoDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
 
     // 비디오 요소들의 ref를 저장 (number와 string 키 모두 허용)
     const videoRefs = useRef<{ [key: string | number]: HTMLVideoElement | null }>({});
@@ -259,16 +259,7 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
         const video = e.currentTarget;
         const dimensions = { width: video.videoWidth, height: video.videoHeight };
 
-        // 비디오 dimensions 저장 (이미지와 동일한 로직 적용)
-        setVideoDimensions(prev => {
-            const newDimensions = {
-                ...prev,
-                [index]: dimensions
-            };
-            return newDimensions;
-        });
-
-        // imageDimensions에도 추가하여 높이 계산에 포함
+        // imageDimensions에 추가하여 높이 계산에 포함
         setImageDimensions(prev => {
             const newDimensions = {
                 ...prev,
@@ -405,12 +396,13 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                             />
                                         )
                                     ) : (
-                                        <img
-                                            src={image.cloudinary_url}
+                                        <Image
+                                            src={image.cloudinary_url || ''}
                                             alt={`이미지 ${index + 1}`}
+                                            width={800}
+                                            height={600}
                                             className={`w-full h-auto ${isTooTall ? 'object-cover object-top' : 'object-contain'} cursor-pointer ${maxHeightClass} ${isAdultContent ? 'blur-md hover:blur-none transition-all duration-300' : ''
                                                 }`}
-                                            loading="lazy"
                                             onClick={() => openFullscreen(index)}
                                             onLoad={(e) => handleImageLoad(e, index)}
                                             onError={(e) => handleImageError(e, index)}
@@ -577,9 +569,11 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                         ) : isTooTall ? (
                                             // 긴 이미지: 스크롤 가능, Zoom 비활성화
                                             <div className="w-full h-full flex items-start justify-center overflow-auto px-8 py-4">
-                                                <img
-                                                    src={image.cloudinary_url}
+                                                <Image
+                                                    src={image.cloudinary_url || ''}
                                                     alt={`이미지 ${index + 1}`}
+                                                    width={600}
+                                                    height={1500}
                                                     className="h-auto object-contain"
                                                     style={{ width: '600px', maxWidth: '90vw' }}
                                                 />
@@ -587,9 +581,11 @@ export default function ImageCarousel({ images, isAdultContent = false, title }:
                                         ) : (
                                             // 일반 이미지: Zoom 가능
                                             <div className="swiper-zoom-container">
-                                                <img
-                                                    src={image.cloudinary_url}
+                                                <Image
+                                                    src={image.cloudinary_url || ''}
                                                     alt={`이미지 ${index + 1}`}
+                                                    width={1200}
+                                                    height={900}
                                                     className="max-w-full max-h-full object-contain"
                                                 />
                                             </div>

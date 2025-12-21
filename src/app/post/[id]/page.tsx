@@ -2,6 +2,7 @@
 
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, SiteBbsInfo } from '@/lib/api';
 import Header from '@/components/Header';
 import Sidebar from '@/components/Sidebar';
@@ -163,7 +164,7 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                     onNavigate={handleNavigate}
                 />
                 <div className="flex justify-center items-center py-20">
-                    <img src="/cat_in_a_rocket_loading.gif" alt="로딩 중" />
+                    <Image src="/cat_in_a_rocket_loading.gif" alt="로딩 중" width={100} height={100} unoptimized />
                 </div>
             </div>
         );
@@ -309,11 +310,12 @@ export default function PostDetailPage({ params }: PostDetailPageProps) {
                             {post.optimizedImagesList.map((image, index) => (
                                 image.cloudinary_url && (
                                     <div key={index} className="w-full">
-                                        <img
+                                        <Image
                                             src={image.cloudinary_url}
                                             alt={`${post.title} - 이미지 ${index + 1}`}
+                                            width={800}
+                                            height={600}
                                             className="w-full h-auto rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
-                                            loading="lazy"
                                             onClick={() => setSelectedImageIndex(index)}
                                             onError={(e) => {
                                                 const target = e.target as HTMLImageElement;

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 import { ApiService, TrendingCommunity } from '@/lib/api';
 import { getSiteLogo } from '@/constants/content';
 
@@ -196,11 +197,11 @@ export default function TrendingCommunities({ onPostClick }: TrendingCommunities
                 {/* 배경 이미지 */}
                 {imageUrl && (
                   <>
-                    <img
+                    <Image
                       src={imageUrl}
                       alt={community.best_post_title || community.site}
-                      className="absolute top-0 left-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                      loading="lazy"
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-200"
                       onError={(e) => {
                         const target = e.target as HTMLImageElement;
                         target.style.display = 'none';

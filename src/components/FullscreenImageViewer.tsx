@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { OptimizedImages } from '@/lib/api';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, Keyboard, Zoom } from 'swiper/modules';
-import type { Swiper as SwiperType } from 'swiper';
 
 // Swiper 스타일 임포트
 import 'swiper/css';
@@ -21,7 +21,6 @@ interface FullscreenImageViewerProps {
 
 export default function FullscreenImageViewer({ images, initialIndex, isOpen, onClose }: FullscreenImageViewerProps) {
     const [fullscreenIndex, setFullscreenIndex] = useState(initialIndex);
-    const [fullscreenSwiper, setFullscreenSwiper] = useState<SwiperType | null>(null);
     const [imageDimensions, setImageDimensions] = useState<{ [key: number]: { width: number; height: number } }>({});
 
     // initialIndex가 변경되면 fullscreenIndex도 업데이트
@@ -111,7 +110,6 @@ export default function FullscreenImageViewer({ images, initialIndex, isOpen, on
                     threshold={5}
                     followFinger={true}
                     initialSlide={initialIndex}
-                    onSwiper={setFullscreenSwiper}
                     onSlideChange={(swiper) => setFullscreenIndex(swiper.activeIndex)}
                     className="fullscreen-carousel-swiper h-full"
                     resistance={true}
@@ -123,14 +121,18 @@ export default function FullscreenImageViewer({ images, initialIndex, isOpen, on
                         const aspectRatio = dimension ? dimension.height / dimension.width : 0;
                         const isTooTall = aspectRatio >= 2.5;
 
+                        if (!image.cloudinary_url) return null;
+
                         return (
                             <SwiperSlide key={index}>
                                 {isTooTall ? (
                                     // 긴 이미지: 스크롤 가능, Zoom 비활성화
                                     <div className="w-full h-full flex items-start justify-center overflow-auto px-8 py-4">
-                                        <img
-                                            src={image.cloudinary_url}
+                                        <Image
+                                            src={image.cloudinary_url || ''}
                                             alt={`이미지 ${index + 1}`}
+                                            width={600}
+                                            height={1500}
                                             className="h-auto object-contain"
                                             style={{ width: '600px', maxWidth: '90vw' }}
                                             onLoad={(e) => handleImageLoad(e, index)}
@@ -139,9 +141,11 @@ export default function FullscreenImageViewer({ images, initialIndex, isOpen, on
                                 ) : (
                                     // 일반 이미지: Zoom 가능
                                     <div className="swiper-zoom-container">
-                                        <img
-                                            src={image.cloudinary_url}
+                                        <Image
+                                            src={image.cloudinary_url || ''}
                                             alt={`이미지 ${index + 1}`}
+                                            width={1200}
+                                            height={900}
                                             className="max-w-full max-h-full object-contain"
                                             onLoad={(e) => handleImageLoad(e, index)}
                                         />
