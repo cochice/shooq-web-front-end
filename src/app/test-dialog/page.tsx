@@ -24,6 +24,15 @@ export default function TestDialogPage() {
 
                     <button
                         onClick={() => showAlert({
+                            message: '심플한 알림 메시지입니다.'
+                        })}
+                        className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                    >
+                        Simple Alert (제목/타입 없음)
+                    </button>
+
+                    <button
+                        onClick={() => showAlert({
                             title: '정보',
                             message: '이것은 정보 알림입니다.',
                             type: 'info'
@@ -74,6 +83,20 @@ export default function TestDialogPage() {
 
                     <button
                         onClick={() => showConfirm({
+                            message: '계속 진행하시겠습니까?',
+                            onConfirm: () => {
+                                showAlert({
+                                    message: '확인했습니다.'
+                                });
+                            }
+                        })}
+                        className="w-full px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+                    >
+                        Simple Confirm (제목/타입 없음)
+                    </button>
+
+                    <button
+                        onClick={() => showConfirm({
                             title: '확인',
                             message: '계속 진행하시겠습니까?',
                             type: 'info',
@@ -118,7 +141,6 @@ export default function TestDialogPage() {
 
                 <Confirm
                     isOpen={confirmOpen}
-                    onConfirm={confirmOptions.onConfirm}
                     onCancel={hideConfirm}
                     {...confirmOptions}
                 />

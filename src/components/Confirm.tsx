@@ -83,6 +83,9 @@ const Confirm: React.FC<ConfirmProps> = ({
         }
     };
 
+    // 심플한 디자인 (제목과 타입이 없을 때)
+    const isSimple = !title && !type;
+
     return (
         <div
             className="fixed inset-0 z-[60] flex items-center justify-center"
@@ -93,46 +96,80 @@ const Confirm: React.FC<ConfirmProps> = ({
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full mx-4 animate-in fade-in zoom-in duration-200"
                 onClick={(e) => e.stopPropagation()}
             >
-                {/* Header */}
-                <div className="flex items-start justify-between p-6 pb-4">
-                    <div className="flex items-start space-x-3">
-                        <div className="flex-shrink-0 mt-0.5">
-                            {getIcon()}
-                        </div>
-                        <div className="flex-1">
-                            {title && (
-                                <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
-                                    {title}
-                                </h2>
-                            )}
-                            <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                {isSimple ? (
+                    // 심플한 레이아웃: 메시지와 확인/취소 버튼만
+                    <>
+                        <div className="p-6">
+                            <p className="text-base text-gray-900 dark:text-white whitespace-pre-wrap text-center">
                                 {message}
                             </p>
                         </div>
-                    </div>
-                </div>
+                        <div className="flex justify-center space-x-3 p-6 pt-0">
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="px-8 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                {cancelText}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onConfirm();
+                                    onCancel();
+                                }}
+                                className="px-8 py-2.5 text-sm font-medium text-white bg-gray-800 dark:bg-gray-600 hover:bg-gray-900 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                autoFocus
+                            >
+                                {confirmText}
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    // 기존 레이아웃: 아이콘, 제목, 메시지
+                    <>
+                        {/* Header */}
+                        <div className="flex items-start justify-between p-6 pb-4">
+                            <div className="flex items-start space-x-3">
+                                <div className="flex-shrink-0 mt-0.5">
+                                    {getIcon()}
+                                </div>
+                                <div className="flex-1">
+                                    {title && (
+                                        <h2 className="text-lg font-bold text-gray-900 dark:text-white mb-2">
+                                            {title}
+                                        </h2>
+                                    )}
+                                    <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap">
+                                        {message}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
 
-                {/* Footer */}
-                <div className="flex justify-end space-x-3 p-6 pt-4">
-                    <button
-                        type="button"
-                        onClick={onCancel}
-                        className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                    >
-                        {cancelText}
-                    </button>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            onConfirm();
-                            onCancel();
-                        }}
-                        className={`px-6 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ${getConfirmButtonColor()}`}
-                        autoFocus
-                    >
-                        {confirmText}
-                    </button>
-                </div>
+                        {/* Footer */}
+                        <div className="flex justify-end space-x-3 p-6 pt-4">
+                            <button
+                                type="button"
+                                onClick={onCancel}
+                                className="px-6 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                            >
+                                {cancelText}
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    onConfirm();
+                                    onCancel();
+                                }}
+                                className={`px-6 py-2.5 text-sm font-medium text-white rounded-lg transition-colors ${getConfirmButtonColor()}`}
+                                autoFocus
+                            >
+                                {confirmText}
+                            </button>
+                        </div>
+                    </>
+                )}
             </div>
         </div>
     );
